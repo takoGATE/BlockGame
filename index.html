@@ -2,17 +2,21 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- スマホでのズーム（拡大縮小）を完全に無効化 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tetris Game</title>
   <style>
     :root {
       --bg-color: #090d16;
       --card-bg: rgba(30, 41, 59, 0.7);
       --text-color: #f8fafc;
-      --accent-color: #38bdf8;
       --border-color: rgba(255, 255, 255, 0.1);
-      --btn-bg: #1e293b;
-      --btn-active: #0284c7;
+      
+      /* ボタン用カラー（機能ごとに視覚差別化） */
+      --btn-move: #0e7490;       /* 左右移動：シアン */
+      --btn-down: #d97706;       /* 下移動：アンバー */
+      --btn-rotate: #2563eb;     /* 回転：ブルー */
+      --btn-drop: #dc2626;       /* 一発落下：レッド */
     }
 
     * {
@@ -21,6 +25,16 @@
       padding: 0;
       user-select: none;
       -webkit-user-select: none;
+      -webkit-touch-callout: none; /* スマホ長押しメニューを禁止 */
+    }
+
+    html, body {
+      /* スマホでの画面スクロール・跳ね返りを防止 */
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+      overscroll-behavior: none;
     }
 
     body {
@@ -30,7 +44,6 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
       padding: 10px;
     }
 
@@ -38,19 +51,20 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
-      padding: 24px;
+      gap: 12px;
+      padding: 16px;
       background: var(--card-bg);
       backdrop-filter: blur(12px);
       border-radius: 20px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6),
                   inset 0 1px 0 rgba(255, 255, 255, 0.1);
       border: 1px solid var(--border-color);
+      max-width: 100vw;
     }
 
     .top-section {
       display: flex;
-      gap: 20px;
+      gap: 16px;
       align-items: flex-start;
     }
 
@@ -72,15 +86,15 @@
     .sidebar {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      width: 120px;
+      gap: 10px;
+      width: 100px;
     }
 
     .panel {
       background: rgba(3, 7, 18, 0.6);
       border: 1px solid var(--border-color);
       border-radius: 10px;
-      padding: 10px;
+      padding: 8px;
       text-align: center;
     }
 
@@ -88,15 +102,15 @@
       font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 1px;
       color: #64748b;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .panel .value {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 800;
-      color: var(--accent-color);
+      color: #38bdf8;
       text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
     }
 
@@ -110,82 +124,106 @@
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      padding-top: 12px;
+      padding-top: 8px;
       border-top: 1px solid var(--border-color);
+      gap: 12px;
     }
 
     /* 十字キー（D-Pad） */
     .dpad {
       display: grid;
-      grid-template-columns: repeat(3, 50px);
-      grid-template-rows: repeat(3, 50px);
-      gap: 6px;
+      grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(3, 48px);
+      gap: 4px;
     }
 
     .dpad-btn {
-      background-color: var(--btn-bg);
-      color: var(--text-color);
-      border: 1px solid var(--border-color);
+      color: #fff;
+      border: none;
       border-radius: 12px;
-      font-size: 16px;
+      font-size: 18px;
+      font-weight: bold;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      box-shadow: 0 4px 0 #0f172a;
-      transition: all 0.05s ease;
-      touch-action: manipulation;
+      touch-action: none;
+      transition: transform 0.05s ease, filter 0.05s ease;
+    }
+
+    .dpad-btn span.label {
+      font-size: 9px;
+      margin-top: 2px;
+      opacity: 0.8;
+    }
+
+    /* ボタンごとの視覚差別化 */
+    .btn-up { 
+      grid-column: 2; grid-row: 1; 
+      background: var(--btn-rotate);
+      box-shadow: 0 4px 0 #1d4ed8;
+    }
+    .btn-left { 
+      grid-column: 1; grid-row: 2; 
+      background: var(--btn-move);
+      box-shadow: 0 4px 0 #0e7490;
+    }
+    .btn-right { 
+      grid-column: 3; grid-row: 2; 
+      background: var(--btn-move);
+      box-shadow: 0 4px 0 #0e7490;
+    }
+    .btn-down { 
+      grid-column: 2; grid-row: 3; 
+      background: var(--btn-down);
+      box-shadow: 0 4px 0 #b45309;
     }
 
     .dpad-btn:active, .dpad-btn.active {
       transform: translateY(3px);
-      box-shadow: 0 1px 0 #0f172a;
-      background-color: var(--btn-active);
-      color: #fff;
+      box-shadow: 0 1px 0 transparent !important;
+      filter: brightness(1.2);
     }
-
-    .btn-up { grid-column: 2; grid-row: 1; }
-    .btn-left { grid-column: 1; grid-row: 2; }
-    .btn-right { grid-column: 3; grid-row: 2; }
-    .btn-down { grid-column: 2; grid-row: 3; }
 
     /* アクションボタン */
     .action-buttons {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .action-btn {
-      width: 120px;
+      width: 110px;
       height: 48px;
       color: #fff;
       border: none;
-      border-radius: 24px;
-      font-weight: 700;
-      font-size: 14px;
+      border-radius: 14px;
+      font-weight: 800;
+      font-size: 13px;
       cursor: pointer;
-      letter-spacing: 0.5px;
-      transition: all 0.05s ease;
-      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      touch-action: none;
+      transition: transform 0.05s ease, filter 0.05s ease;
     }
 
     .btn-rotate-action {
-      background: linear-gradient(135deg, #0284c7, #38bdf8);
-      box-shadow: 0 4px 0 #0369a1, 0 0 15px rgba(56, 189, 248, 0.3);
-    }
-    .btn-rotate-action:active, .btn-rotate-action.active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 #0369a1;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      box-shadow: 0 4px 0 #1d4ed8;
     }
 
     .btn-drop-action {
-      background: linear-gradient(135deg, #e11d48, #fb7185);
-      box-shadow: 0 4px 0 #9f1239, 0 0 15px rgba(225, 29, 72, 0.3);
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      box-shadow: 0 4px 0 #b91c1c;
     }
-    .btn-drop-action:active, .btn-drop-action.active {
+
+    .action-btn:active, .action-btn.active {
       transform: translateY(3px);
-      box-shadow: 0 1px 0 #9f1239;
+      box-shadow: 0 1px 0 transparent !important;
+      filter: brightness(1.2);
     }
 
     .overlay {
@@ -212,7 +250,7 @@
     }
 
     .btn-restart {
-      background: var(--accent-color);
+      background: #38bdf8;
       color: #0f172a;
       border: none;
       padding: 12px 24px;
@@ -228,7 +266,6 @@
 <div class="game-container">
   <div class="top-section">
     <div class="main-board">
-      <!-- 24px * 20行 = 480px (最下部までぴったり収まる高さに設定) -->
       <canvas id="tetris" width="240" height="480"></canvas>
       <div id="game-over" class="overlay" style="display: none;">
         <h1>GAME OVER</h1>
@@ -259,14 +296,20 @@
   <!-- 操作コントローラー -->
   <div class="controller-section">
     <div class="dpad">
-      <button class="dpad-btn btn-up" id="btn-up">▲</button>
+      <button class="dpad-btn btn-up" id="btn-up">
+        ↻
+        <span class="label">回転</span>
+      </button>
       <button class="dpad-btn btn-left" id="btn-left">◄</button>
       <button class="dpad-btn btn-right" id="btn-right">►</button>
-      <button class="dpad-btn btn-down" id="btn-down">▼</button>
+      <button class="dpad-btn btn-down" id="btn-down">
+        ▼
+        <span class="label">加速</span>
+      </button>
     </div>
     <div class="action-buttons">
-      <button class="action-btn btn-rotate-action" id="btn-rotate">回転</button>
-      <button class="action-btn btn-drop-action" id="btn-space">一発落下</button>
+      <button class="action-btn btn-rotate-action" id="btn-rotate">↻ 回転</button>
+      <button class="action-btn btn-drop-action" id="btn-space">⚡ 一発落下</button>
     </div>
   </div>
 </div>
@@ -532,18 +575,41 @@
     ' ': 'btn-space'
   };
 
+  // タッチ・クリック制御（ダブルタップ拡大やスクロールの完全防止）
   Object.keys(buttonMap).forEach(id => {
     const btn = document.getElementById(id);
     if (!btn) return;
+
     const trigger = (e) => {
-      e.preventDefault();
+      e.preventDefault(); // デフォルト動作（スクロール・ズーム等）を即座に停止
       if (isGameOver) return;
       buttonMap[id]();
     };
 
-    btn.addEventListener('mousedown', trigger);
-    btn.addEventListener('touchstart', trigger);
+    // touchstartで即座に反応させることで遅延（100〜300ms）を削減
+    btn.addEventListener('touchstart', trigger, { passive: false });
+    btn.addEventListener('mousedown', (e) => {
+      // タッチデバイスでの二重発火を防止
+      if (e.detail === 0) return; 
+      trigger(e);
+    });
   });
+
+  // 画面全体のタッチによる拡大・スクロールをJSレベルでも無効化
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 1) {
+      e.preventDefault(); // ピンチイン・ピンチアウトの禁止
+    }
+  }, { passive: false });
+
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault(); // ダブルタップによるズームの禁止
+    }
+    lastTouchEnd = now;
+  }, false);
 
   document.addEventListener('keydown', event => {
     if (isGameOver) return;
