@@ -7,7 +7,7 @@
   <style>
     :root {
       --bg-color: #090d16;
-      --card-bg: rgba(15, 23, 42, 0.75);
+      --card-bg: rgba(15, 23, 42, 0.8);
       --text-color: #f8fafc;
       --border-color: rgba(255, 255, 255, 0.1);
       --accent-color: #38bdf8;
@@ -71,7 +71,6 @@
       display: block;
     }
 
-    /* プレイ画面サイズ調整：少し小さくして視認性を確保 (200x400) */
     #tetris {
       border: 2px solid rgba(56, 189, 248, 0.3);
       box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
@@ -117,62 +116,77 @@
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      padding-top: 6px;
+      padding-top: 8px;
       border-top: 1px solid var(--border-color);
-      gap: 12px;
+      gap: 8px;
     }
 
-    /* 繋がった十字キー（一体型D-Padパッド） */
+    /* 一般的な十字キーから「上」を除いた逆T字形状（スライド対応） */
     .dpad-pad {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
-      width: 160px;
-      height: 110px;
-      background: #0f172a;
-      border-radius: 18px;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(2, 44px);
+      gap: 3px;
+      background: #0b1329;
+      border-radius: 16px;
       padding: 6px;
-      gap: 4px;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.5);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.5);
       touch-action: none;
     }
 
     .dpad-btn {
       background: #1e293b;
-      color: #94a3b8;
+      color: #cbd5e1;
       border: none;
-      border-radius: 10px;
-      font-size: 20px;
+      font-size: 18px;
       display: flex;
       justify-content: center;
       align-items: center;
-      transition: background 0.1s, color 0.1s, transform 0.05s;
-      pointer-events: none; /* JSで親要素からタッチ判定するため */
+      transition: background 0.05s, color 0.05s, transform 0.05s;
+      pointer-events: auto;
     }
 
-    .btn-left { grid-column: 1; grid-row: 1 / span 2; }
-    .btn-right { grid-column: 3; grid-row: 1 / span 2; }
-    .btn-down { grid-column: 2; grid-row: 1 / span 2; background: #1e293b; }
+    /* 逆T字構造の配置 */
+    .btn-left { 
+      grid-column: 1; grid-row: 1; 
+      border-radius: 10px 0 0 10px;
+      box-shadow: -2px 3px 0 #0f172a;
+    }
+    .btn-right { 
+      grid-column: 3; grid-row: 1; 
+      border-radius: 0 10px 10px 0;
+      box-shadow: 2px 3px 0 #0f172a;
+    }
+    .btn-down { 
+      grid-column: 2; grid-row: 2; 
+      border-radius: 0 0 10px 10px;
+      box-shadow: 0 4px 0 #0f172a;
+    }
 
-    /* スライド/タップ中のアクティブスタイル */
+    /* スライド/タップ中のアクティブ状態 */
     .dpad-btn.active {
       background: #0284c7 !important;
       color: #ffffff !important;
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
-      transform: scale(0.96);
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.5) !important;
+      filter: brightness(1.2);
     }
 
-    /* 右側：洗練されたスタイリッシュなアーケードボタン */
+    /* 右側：対角配置（右上＝一発、左下＝回転）のボタンエリア */
     .action-buttons {
-      display: flex;
-      gap: 12px;
+      display: grid;
+      grid-template-columns: repeat(2, 58px);
+      grid-template-rows: repeat(2, 58px);
+      gap: 6px;
+      width: 122px;
+      height: 122px;
       align-items: center;
+      justify-content: center;
     }
 
     .arcade-btn {
-      width: 62px;
-      height: 62px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       border: none;
       cursor: pointer;
@@ -184,35 +198,38 @@
       color: #fff;
       touch-action: none;
       transition: transform 0.05s, box-shadow 0.05s;
-      position: relative;
     }
 
-    /* 回転ボタン：ネオンブルー */
-    .btn-rotate-action {
-      background: radial-gradient(circle at 35% 35%, #38bdf8, #0284c7);
-      box-shadow: 0 6px 0 #0369a1, 0 8px 15px rgba(2, 132, 199, 0.4);
-    }
-
-    /* 一発落下ボタン：ネオンレッド */
+    /* 右上に「一発落下」 */
     .btn-drop-action {
+      grid-column: 2;
+      grid-row: 1;
       background: radial-gradient(circle at 35% 35%, #f43f5e, #be123c);
-      box-shadow: 0 6px 0 #881337, 0 8px 15px rgba(225, 29, 72, 0.4);
+      box-shadow: 0 5px 0 #881337, 0 6px 12px rgba(225, 29, 72, 0.4);
+    }
+
+    /* 左下に「回転」 */
+    .btn-rotate-action {
+      grid-column: 1;
+      grid-row: 2;
+      background: radial-gradient(circle at 35% 35%, #38bdf8, #0284c7);
+      box-shadow: 0 5px 0 #0369a1, 0 6px 12px rgba(2, 132, 199, 0.4);
     }
 
     .arcade-btn:active, .arcade-btn.active {
-      transform: translateY(4px);
-      box-shadow: 0 2px 0 #000, 0 2px 5px rgba(0,0,0,0.5) !important;
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #000, 0 2px 4px rgba(0,0,0,0.5) !important;
       filter: brightness(1.2);
     }
 
     .arcade-btn .icon {
-      font-size: 18px;
+      font-size: 16px;
       line-height: 1;
     }
 
     .arcade-btn .text {
       font-size: 8px;
-      margin-top: 2px;
+      margin-top: 1px;
       letter-spacing: 0.5px;
       opacity: 0.9;
     }
@@ -258,7 +275,6 @@
 <div class="game-container">
   <div class="top-section">
     <div class="main-board">
-      <!-- 20px * 10列 / 20行 = 200px * 400px に適正化 -->
       <canvas id="tetris" width="200" height="400"></canvas>
       <div id="game-over" class="overlay" style="display: none;">
         <h1>GAME OVER</h1>
@@ -288,22 +304,22 @@
 
   <!-- 操作コントローラー -->
   <div class="controller-section">
-    <!-- スライド操作対応 一体型十字キー（上なし） -->
+    <!-- 逆T字型 繋がった十字キー（スライド対応） -->
     <div class="dpad-pad" id="dpad-pad">
-      <div class="dpad-btn btn-left" data-action="left" id="btn-left">◄</div>
-      <div class="dpad-btn btn-down" data-action="down" id="btn-down">▼</div>
-      <div class="dpad-btn btn-right" data-action="right" id="btn-right">►</div>
+      <button class="dpad-btn btn-left" data-action="left" id="btn-left">◄</button>
+      <button class="dpad-btn btn-right" data-action="right" id="btn-right">►</button>
+      <button class="dpad-btn btn-down" data-action="down" id="btn-down">▼</button>
     </div>
 
-    <!-- 右側：洗練された円形アーケードボタン -->
+    <!-- 右側：斜めに配置したアーケードボタン（右上＝一発、左下＝回転） -->
     <div class="action-buttons">
-      <button class="arcade-btn btn-rotate-action" id="btn-rotate">
-        <span class="icon">↻</span>
-        <span class="text">回転</span>
-      </button>
       <button class="arcade-btn btn-drop-action" id="btn-space">
         <span class="icon">⚡</span>
         <span class="text">一発</span>
+      </button>
+      <button class="arcade-btn btn-rotate-action" id="btn-rotate">
+        <span class="icon">↻</span>
+        <span class="text">回転</span>
       </button>
     </div>
   </div>
@@ -317,7 +333,7 @@
 
   const COLS = 10;
   const ROWS = 20;
-  const BLOCK_SIZE = 20; // ブロックサイズ調整
+  const BLOCK_SIZE = 20;
 
   context.scale(BLOCK_SIZE, BLOCK_SIZE);
   nextContext.scale(12.5, 12.5);
@@ -553,41 +569,41 @@
     update();
   }
 
-  /* --- スライド（スワイプ）対応十字キー処理 --- */
+  /* --- タッチ/スライド操作に確実に応答する十字キーの制御JS --- */
   const dpadPad = document.getElementById('dpad-pad');
   let currentActiveBtn = null;
   let slideInterval = null;
 
-  function handlePadTouch(e) {
+  function updateTouchPosition(e) {
     e.preventDefault();
     if (isGameOver) return;
 
     const touch = e.touches[0] || e.changedTouches[0];
     if (!touch) return;
 
-    // 現在の指の位置にある要素を取得
+    // タッチしている座標にあるボタンを取得
     const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
     const btn = targetEl ? targetEl.closest('.dpad-btn') : null;
 
     if (btn !== currentActiveBtn) {
-      // 以前のボタンのアクティブを解除
       if (currentActiveBtn) {
         currentActiveBtn.classList.remove('active');
+      }
+      if (slideInterval) {
         clearInterval(slideInterval);
         slideInterval = null;
       }
 
       currentActiveBtn = btn;
 
-      // 新しいボタンに入った場合
       if (btn) {
         btn.classList.add('active');
         const actionType = btn.dataset.action;
-        
-        // 即座に1回実行
+
+        // タッチした瞬間に1回即時実行
         if (actions[actionType]) actions[actionType]();
 
-        // 押しっぱなし・スライド保持時の連続移動処理
+        // 長押し・指を置いたまま移動させた際の連続入力（120ミリ秒間隔）
         slideInterval = setInterval(() => {
           if (actions[actionType]) actions[actionType]();
         }, 120);
@@ -595,7 +611,7 @@
     }
   }
 
-  function stopPadTouch(e) {
+  function releaseTouch(e) {
     e.preventDefault();
     if (currentActiveBtn) {
       currentActiveBtn.classList.remove('active');
@@ -607,12 +623,38 @@
     }
   }
 
-  dpadPad.addEventListener('touchstart', handlePadTouch, { passive: false });
-  dpadPad.addEventListener('touchmove', handlePadTouch, { passive: false });
-  dpadPad.addEventListener('touchend', stopPadTouch, { passive: false });
-  dpadPad.addEventListener('touchcancel', stopPadTouch, { passive: false });
+  // スマホ用タッチイベントの設定
+  dpadPad.addEventListener('touchstart', updateTouchPosition, { passive: false });
+  dpadPad.addEventListener('touchmove', updateTouchPosition, { passive: false });
+  dpadPad.addEventListener('touchend', releaseTouch, { passive: false });
+  dpadPad.addEventListener('touchcancel', releaseTouch, { passive: false });
 
-  /* --- 右側アクションボタン（回転・一発落下）の制御 --- */
+  // PCマウス操作用フォールバック
+  ['btn-left', 'btn-right', 'btn-down'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const actionType = btn.dataset.action;
+
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (isGameOver) return;
+      btn.classList.add('active');
+      if (actions[actionType]) actions[actionType]();
+
+      const timer = setInterval(() => {
+        if (actions[actionType]) actions[actionType]();
+      }, 120);
+
+      const stopMouse = () => {
+        btn.classList.remove('active');
+        clearInterval(timer);
+        window.removeEventListener('mouseup', stopMouse);
+      };
+      window.addEventListener('mouseup', stopMouse);
+    });
+  });
+
+  /* --- 右側アクションボタン（回転・一発落下） --- */
   const actionButtonMap = {
     'btn-rotate': actions.rotate,
     'btn-space': actions.hardDrop
