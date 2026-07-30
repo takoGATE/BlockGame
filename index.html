@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tetris Game</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f8fafc;
+      --accent-color: #38bdf8;
+      --border-color: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .game-container {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border-color);
+    }
+
+    .main-board {
+      position: relative;
+    }
+
+    canvas {
+      border-radius: 6px;
+      background-color: #020617;
+      display: block;
+    }
+
+    #tetris {
+      border: 2px solid var(--border-color);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 140px;
+    }
+
+    .panel {
+      background-color: #020617;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .panel h2 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .panel .value {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--accent-color);
+    }
+
+    #next-canvas {
+      margin: 0 auto;
+    }
+
+    .controls-hint {
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    .controls-hint span {
+      color: #cbd5e1;
+      font-weight: bold;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(2, 6, 23, 0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: 6px;
+    }
+
+    .overlay h1 {
+      font-size: 24px;
+      margin-bottom: 15px;
+      color: #ef4444;
+    }
+
+    .btn {
+      background-color: var(--accent-color);
+      color: #0f172a;
+      border: none;
+      padding: 10px 20px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #7dd3fc;
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-container">
+  <div class="main-board">
+    <canvas id="tetris" width="240" height="400"></canvas>
+    <div id="game-over" class="overlay" style="display: none;">
+      <h1>GAME OVER</h1>
+      <button class="btn" onclick="resetGame()">RESTART</button>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div>
+      <div class="panel">
+        <h2>NEXT</h2>
+        <canvas id="next-canvas" width="80" height="80"></canvas>
+      </div>
+      <div class="panel">
+        <h2>SCORE</h2>
+        <div id="score" class="value">0</div>
+      </div>
+      <div class="panel">
+        <h2>LINES</h2>
+        <div id="lines" class="value">0</div>
+      </div>
+      <div class="panel">
+        <h2>LEVEL</h2>
+        <div id="level" class="value">1</div>
+      </div>
+    </div>
+
+    <div class="controls-hint">
+      <p><span>← →</span> : 移動</p>
+      <p><span>↑</span> : 回転</p>
+      <p><span>↓</span> : ソフトドロップ</p>
+      <p><span>Space</span> : ハードドロップ</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('tetris');
+  const context = canvas.getContext('2d');
+  const nextCanvas = document.getElementById('next-canvas');
+  const nextContext = nextCanvas.getContext('2d');
+
+  const COLS = 10;
+  const ROWS = 20;
+  const BLOCK_SIZE = 24;
+
+  context.scale(BLOCK_SIZE, BLOCK_SIZE);
+  nextContext.scale(20, 20);
+
+  // ブロックの色定義 (鮮やかなネオンカラー)
+  const COLORS = [
+    null,
+    '#00f0f0', // I (Cyan)
+    '#0000f0', // J (Blue)
+    '#f0a000', // L (Orange)
+    '#f0f000', // O (Yellow)
+    '#00f000', // S (Green)
+    '#a000f0', // T (Purple)
+    '#f00000'  // Z (Red)
+  ];
+
+  // 7種類のテトリミノ形状定義
+  const SHAPES = [
+    [],
+    [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], // I
+    [[2,0,0],[2,2,2],[0,0,0]],                // J
+    [[0,0,3],[3,3,3],[0,0,0]],                // L
+    [[4,4],[4,4]],                            // O
+    [[0,5,5],[5,5,0],[0,0,0]],                // S
+    [[0,6,0],[6,6,6],[0,0,0]],                // T
+    [[7,7,0],[0,7,7],[0,0,0]]                 // Z
+  ];
+
+  let board = createMatrix(COLS, ROWS);
+  let player = {
+    pos: {x: 0, y: 0},
+    matrix: null,
+    score: 0,
+    lines: 0,
+    level: 1
+  };
+  let nextPiece = null;
+
+  let dropCounter = 0;
+  let dropInterval = 1000;
+  let lastTime = 0;
+  let isGameOver = false;
+
+  function createMatrix(w, h) {
+    const matrix = [];
+    while (h--) matrix.push(new Array(w).fill(0));
+    return matrix;
+  }
+
+  // ブロック描画関数（立体感を出すための枠線処理付き）
+  function drawMatrix(matrix, offset, ctx) {
+    matrix.forEach((row, y) => {
+      row.forEach((value, x) => {
+        if (value !== 0) {
+          ctx.fillStyle = COLORS[value];
+          ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
+          
+          // 内側の光沢処理
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.fillRect(x + offset.x, y + offset.y, 1, 0.1);
+          ctx.fillRect(x + offset.x, y + offset.y, 0.1, 1);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+          ctx.fillRect(x + offset.x, y + offset.y + 0.9, 1, 0.1);
+          ctx.fillRect(x + offset.x + 0.9, y + offset.y, 0.1, 1);
+        }
+      });
+    });
+  }
+
+  function draw() {
+    context.fillStyle = '#020617';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    // グリッド線の描画
+    context.strokeStyle = '#0f172a';
+    context.lineWidth = 0.05;
+    for (let i = 0; i < COLS; i++) context.strokeRect(i, 0, 1, ROWS);
+    for (let i = 0; i < ROWS; i++) context.strokeRect(0, i, COLS, 1);
+
+    drawMatrix(board, {x: 0, y: 0}, context);
+    drawMatrix(player.matrix, player.pos, context);
+
+    // Next プレビュー画面の描画
+    nextContext.fillStyle = '#020617';
+    nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+    if (nextPiece) {
+      const offsetX = (4 - nextPiece[0].length) / 2;
+      const offsetY = (4 - nextPiece.length) / 2;
+      drawMatrix(nextPiece, {x: offsetX, y: offsetY}, nextContext);
+    }
+  }
+
+  function collide(board, player) {
+    const [m, o] = [player.matrix, player.pos];
+    for (let y = 0; y < m.length; ++y) {
+      for (let x = 0; x < m[y].length; ++x) {
+        if (m[y][x] !== 0 && (board[y + o.y] && board[y + o.y][x + o.x]) !== 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function merge(board, player) {
+    player.matrix.forEach((row, y) => {
+      row.forEach((value, x) => {
+        if (value !== 0) {
+          board[y + player.pos.y][x + player.pos.x] = value;
+        }
+      });
+    });
+  }
+
+  function rotate(matrix) {
+    for (let y = 0; y < matrix.length; ++y) {
+      for (let x = 0; x < y; ++x) {
+        [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+      }
+    }
+    matrix.forEach(row => row.reverse());
+  }
+
+  function playerRotate() {
+    const pos = player.pos.x;
+    let offset = 1;
+    rotate(player.matrix);
+    // 壁蹴り（回転時に壁に埋まるのを防ぐ）
+    while (collide(board, player)) {
+      player.pos.x += offset;
+      offset = -(offset + (offset > 0 ? 1 : -1));
+      if (offset > player.matrix[0].length) {
+        rotate(player.matrix); // 回転不可の場合は元に戻す
+        player.pos.x = pos;
+        return;
+      }
+    }
+  }
+
+  function playerMove(dir) {
+    player.pos.x += dir;
+    if (collide(board, player)) {
+      player.pos.x -= dir;
+    }
+  }
+
+  function playerDrop() {
+    player.pos.y++;
+    if (collide(board, player)) {
+      player.pos.y--;
+      merge(board, player);
+      playerReset();
+      clearLines();
+      updateScore();
+    }
+    dropCounter = 0;
+  }
+
+  function playerHardDrop() {
+    while (!collide(board, player)) {
+      player.pos.y++;
+    }
+    player.pos.y--;
+    merge(board, player);
+    playerReset();
+    clearLines();
+    updateScore();
+    dropCounter = 0;
+  }
+
+  function getRandomPiece() {
+    const type = Math.floor(Math.random() * 7) + 1;
+    return SHAPES[type];
+  }
+
+  function playerReset() {
+    if (!nextPiece) {
+      nextPiece = getRandomPiece();
+    }
+    player.matrix = nextPiece;
+    nextPiece = getRandomPiece();
+    player.pos.y = 0;
+    player.pos.x = Math.floor(COLS / 2) - Math.floor(player.matrix[0].length / 2);
+
+    if (collide(board, player)) {
+      isGameOver = true;
+      document.getElementById('game-over').style.display = 'flex';
+    }
+  }
+
+  function clearLines() {
+    let linesCleared = 0;
+    outer: for (let y = board.length - 1; y >= 0; --y) {
+      for (let x = 0; x < board[y].length; ++x) {
+        if (board[y][x] === 0) continue outer;
+      }
+      const row = board.splice(y, 1)[0].fill(0);
+      board.unshift(row);
+      ++y;
+      linesCleared++;
+    }
+
+    if (linesCleared > 0) {
+      // スコア計算 (同時消しによるボーナス)
+      const lineScores = [0, 100, 300, 500, 800];
+      player.score += lineScores[linesCleared] * player.level;
+      player.lines += linesCleared;
+      
+      // レベルアップ判定 (10ラインごとにスピードアップ)
+      player.level = Math.floor(player.lines / 10) + 1;
+      dropInterval = Math.max(100, 1000 - (player.level - 1) * 100);
+    }
+  }
+
+  function updateScore() {
+    document.getElementById('score').innerText = player.score;
+    document.getElementById('lines').innerText = player.lines;
+    document.getElementById('level').innerText = player.level;
+  }
+
+  function update(time = 0) {
+    if (isGameOver) return;
+
+    const deltaTime = time - lastTime;
+    lastTime = time;
+
+    dropCounter += deltaTime;
+    if (dropCounter > dropInterval) {
+      playerDrop();
+    }
+
+    draw();
+    requestAnimationFrame(update);
+  }
+
+  function resetGame() {
+    board = createMatrix(COLS, ROWS);
+    player.score = 0;
+    player.lines = 0;
+    player.level = 1;
+    dropInterval = 1000;
+    isGameOver = false;
+    document.getElementById('game-over').style.display = 'none';
+    updateScore();
+    nextPiece = null;
+    playerReset();
+    update();
+  }
+
+  // キーボード操作の設定
+  document.addEventListener('keydown', event => {
+    if (isGameOver) return;
+
+    switch (event.keyCode) {
+      case 37: // Left Arrow
+        playerMove(-1);
+        break;
+      case 39: // Right Arrow
+        playerMove(1);
+        break;
+      case 40: // Down Arrow
+        playerDrop();
+        break;
+      case 38: // Up Arrow
+        playerRotate();
+        break;
+      case 32: // Space
+        event.preventDefault();
+        playerHardDrop();
+        break;
+    }
+  });
+
+  playerReset();
+  update();
+</script>
+
+</body>
+</html>
