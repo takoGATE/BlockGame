@@ -2,21 +2,15 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <!-- スマホでのズーム（拡大縮小）を完全に無効化 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tetris Game</title>
   <style>
     :root {
       --bg-color: #090d16;
-      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-bg: rgba(15, 23, 42, 0.75);
       --text-color: #f8fafc;
       --border-color: rgba(255, 255, 255, 0.1);
-      
-      /* ボタン用カラー（機能ごとに視覚差別化） */
-      --btn-move: #0e7490;       /* 左右移動：シアン */
-      --btn-down: #d97706;       /* 下移動：アンバー */
-      --btn-rotate: #2563eb;     /* 回転：ブルー */
-      --btn-drop: #dc2626;       /* 一発落下：レッド */
+      --accent-color: #38bdf8;
     }
 
     * {
@@ -25,11 +19,10 @@
       padding: 0;
       user-select: none;
       -webkit-user-select: none;
-      -webkit-touch-callout: none; /* スマホ長押しメニューを禁止 */
+      -webkit-touch-callout: none;
     }
 
     html, body {
-      /* スマホでの画面スクロール・跳ね返りを防止 */
       width: 100%;
       height: 100%;
       overflow: hidden;
@@ -40,31 +33,31 @@
     body {
       background: radial-gradient(circle at center, #1e1b4b 0%, #090d16 100%);
       color: var(--text-color);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 10px;
+      padding: 8px;
     }
 
     .game-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      padding: 16px;
+      gap: 10px;
+      padding: 12px;
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      border-radius: 20px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.15);
       border: 1px solid var(--border-color);
       max-width: 100vw;
     }
 
     .top-section {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       align-items: flex-start;
     }
 
@@ -73,157 +66,155 @@
     }
 
     canvas {
-      border-radius: 10px;
+      border-radius: 12px;
       background-color: #030712;
       display: block;
     }
 
+    /* プレイ画面サイズ調整：少し小さくして視認性を確保 (200x400) */
     #tetris {
-      border: 2px solid var(--border-color);
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+      border: 2px solid rgba(56, 189, 248, 0.3);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
     }
 
     .sidebar {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      width: 100px;
+      gap: 8px;
+      width: 85px;
     }
 
     .panel {
-      background: rgba(3, 7, 18, 0.6);
+      background: rgba(3, 7, 18, 0.7);
       border: 1px solid var(--border-color);
       border-radius: 10px;
-      padding: 8px;
+      padding: 6px 4px;
       text-align: center;
     }
 
     .panel h2 {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
-      text-transform: uppercase;
       letter-spacing: 1px;
       color: #64748b;
       margin-bottom: 2px;
     }
 
     .panel .value {
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 800;
-      color: #38bdf8;
-      text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+      color: var(--accent-color);
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
     }
 
     #next-canvas {
-      margin: 4px auto 0;
+      margin: 2px auto 0;
     }
 
-    /* 操作コントローラーエリア */
+    /* コントローラーエリア */
     .controller-section {
       display: flex;
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      padding-top: 8px;
+      padding-top: 6px;
       border-top: 1px solid var(--border-color);
       gap: 12px;
     }
 
-    /* 十字キー（D-Pad） */
-    .dpad {
+    /* 繋がった十字キー（一体型D-Padパッド） */
+    .dpad-pad {
       display: grid;
-      grid-template-columns: repeat(3, 48px);
-      grid-template-rows: repeat(3, 48px);
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      width: 160px;
+      height: 110px;
+      background: #0f172a;
+      border-radius: 18px;
+      padding: 6px;
       gap: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.5);
+      touch-action: none;
     }
 
     .dpad-btn {
-      color: #fff;
+      background: #1e293b;
+      color: #94a3b8;
       border: none;
-      border-radius: 12px;
-      font-size: 18px;
-      font-weight: bold;
+      border-radius: 10px;
+      font-size: 20px;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      cursor: pointer;
-      touch-action: none;
-      transition: transform 0.05s ease, filter 0.05s ease;
+      transition: background 0.1s, color 0.1s, transform 0.05s;
+      pointer-events: none; /* JSで親要素からタッチ判定するため */
     }
 
-    .dpad-btn span.label {
-      font-size: 9px;
-      margin-top: 2px;
-      opacity: 0.8;
+    .btn-left { grid-column: 1; grid-row: 1 / span 2; }
+    .btn-right { grid-column: 3; grid-row: 1 / span 2; }
+    .btn-down { grid-column: 2; grid-row: 1 / span 2; background: #1e293b; }
+
+    /* スライド/タップ中のアクティブスタイル */
+    .dpad-btn.active {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+      transform: scale(0.96);
     }
 
-    /* ボタンごとの視覚差別化 */
-    .btn-up { 
-      grid-column: 2; grid-row: 1; 
-      background: var(--btn-rotate);
-      box-shadow: 0 4px 0 #1d4ed8;
-    }
-    .btn-left { 
-      grid-column: 1; grid-row: 2; 
-      background: var(--btn-move);
-      box-shadow: 0 4px 0 #0e7490;
-    }
-    .btn-right { 
-      grid-column: 3; grid-row: 2; 
-      background: var(--btn-move);
-      box-shadow: 0 4px 0 #0e7490;
-    }
-    .btn-down { 
-      grid-column: 2; grid-row: 3; 
-      background: var(--btn-down);
-      box-shadow: 0 4px 0 #b45309;
-    }
-
-    .dpad-btn:active, .dpad-btn.active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 transparent !important;
-      filter: brightness(1.2);
-    }
-
-    /* アクションボタン */
+    /* 右側：洗練されたスタイリッシュなアーケードボタン */
     .action-buttons {
       display: flex;
-      flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+      align-items: center;
     }
 
-    .action-btn {
-      width: 110px;
-      height: 48px;
-      color: #fff;
+    .arcade-btn {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
       border: none;
-      border-radius: 14px;
-      font-weight: 800;
-      font-size: 13px;
       cursor: pointer;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      font-weight: 900;
+      color: #fff;
       touch-action: none;
-      transition: transform 0.05s ease, filter 0.05s ease;
+      transition: transform 0.05s, box-shadow 0.05s;
+      position: relative;
     }
 
+    /* 回転ボタン：ネオンブルー */
     .btn-rotate-action {
-      background: linear-gradient(135deg, #2563eb, #3b82f6);
-      box-shadow: 0 4px 0 #1d4ed8;
+      background: radial-gradient(circle at 35% 35%, #38bdf8, #0284c7);
+      box-shadow: 0 6px 0 #0369a1, 0 8px 15px rgba(2, 132, 199, 0.4);
     }
 
+    /* 一発落下ボタン：ネオンレッド */
     .btn-drop-action {
-      background: linear-gradient(135deg, #dc2626, #ef4444);
-      box-shadow: 0 4px 0 #b91c1c;
+      background: radial-gradient(circle at 35% 35%, #f43f5e, #be123c);
+      box-shadow: 0 6px 0 #881337, 0 8px 15px rgba(225, 29, 72, 0.4);
     }
 
-    .action-btn:active, .action-btn.active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 transparent !important;
+    .arcade-btn:active, .arcade-btn.active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #000, 0 2px 5px rgba(0,0,0,0.5) !important;
       filter: brightness(1.2);
+    }
+
+    .arcade-btn .icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .arcade-btn .text {
+      font-size: 8px;
+      margin-top: 2px;
+      letter-spacing: 0.5px;
+      opacity: 0.9;
     }
 
     .overlay {
@@ -232,32 +223,33 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(3, 7, 18, 0.9);
+      background: rgba(3, 7, 18, 0.92);
       backdrop-filter: blur(4px);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      border-radius: 10px;
+      border-radius: 12px;
     }
 
     .overlay h1 {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 900;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       color: #f43f5e;
-      text-shadow: 0 0 12px rgba(244, 63, 94, 0.6);
+      text-shadow: 0 0 10px rgba(244, 63, 94, 0.6);
     }
 
     .btn-restart {
-      background: #38bdf8;
+      background: var(--accent-color);
       color: #0f172a;
       border: none;
-      padding: 12px 24px;
+      padding: 10px 20px;
       font-weight: 800;
+      font-size: 13px;
       border-radius: 8px;
       cursor: pointer;
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
     }
   </style>
 </head>
@@ -266,7 +258,8 @@
 <div class="game-container">
   <div class="top-section">
     <div class="main-board">
-      <canvas id="tetris" width="240" height="480"></canvas>
+      <!-- 20px * 10列 / 20行 = 200px * 400px に適正化 -->
+      <canvas id="tetris" width="200" height="400"></canvas>
       <div id="game-over" class="overlay" style="display: none;">
         <h1>GAME OVER</h1>
         <button class="btn-restart" onclick="resetGame()">RESTART</button>
@@ -276,7 +269,7 @@
     <div class="sidebar">
       <div class="panel">
         <h2>NEXT</h2>
-        <canvas id="next-canvas" width="60" height="60"></canvas>
+        <canvas id="next-canvas" width="50" height="50"></canvas>
       </div>
       <div class="panel">
         <h2>SCORE</h2>
@@ -295,21 +288,23 @@
 
   <!-- 操作コントローラー -->
   <div class="controller-section">
-    <div class="dpad">
-      <button class="dpad-btn btn-up" id="btn-up">
-        ↻
-        <span class="label">回転</span>
-      </button>
-      <button class="dpad-btn btn-left" id="btn-left">◄</button>
-      <button class="dpad-btn btn-right" id="btn-right">►</button>
-      <button class="dpad-btn btn-down" id="btn-down">
-        ▼
-        <span class="label">加速</span>
-      </button>
+    <!-- スライド操作対応 一体型十字キー（上なし） -->
+    <div class="dpad-pad" id="dpad-pad">
+      <div class="dpad-btn btn-left" data-action="left" id="btn-left">◄</div>
+      <div class="dpad-btn btn-down" data-action="down" id="btn-down">▼</div>
+      <div class="dpad-btn btn-right" data-action="right" id="btn-right">►</div>
     </div>
+
+    <!-- 右側：洗練された円形アーケードボタン -->
     <div class="action-buttons">
-      <button class="action-btn btn-rotate-action" id="btn-rotate">↻ 回転</button>
-      <button class="action-btn btn-drop-action" id="btn-space">⚡ 一発落下</button>
+      <button class="arcade-btn btn-rotate-action" id="btn-rotate">
+        <span class="icon">↻</span>
+        <span class="text">回転</span>
+      </button>
+      <button class="arcade-btn btn-drop-action" id="btn-space">
+        <span class="icon">⚡</span>
+        <span class="text">一発</span>
+      </button>
     </div>
   </div>
 </div>
@@ -322,10 +317,10 @@
 
   const COLS = 10;
   const ROWS = 20;
-  const BLOCK_SIZE = 24;
+  const BLOCK_SIZE = 20; // ブロックサイズ調整
 
   context.scale(BLOCK_SIZE, BLOCK_SIZE);
-  nextContext.scale(15, 15);
+  nextContext.scale(12.5, 12.5);
 
   const COLORS = [
     null,
@@ -558,75 +553,111 @@
     update();
   }
 
-  const buttonMap = {
-    'btn-left': actions.left,
-    'btn-right': actions.right,
-    'btn-up': actions.rotate,
+  /* --- スライド（スワイプ）対応十字キー処理 --- */
+  const dpadPad = document.getElementById('dpad-pad');
+  let currentActiveBtn = null;
+  let slideInterval = null;
+
+  function handlePadTouch(e) {
+    e.preventDefault();
+    if (isGameOver) return;
+
+    const touch = e.touches[0] || e.changedTouches[0];
+    if (!touch) return;
+
+    // 現在の指の位置にある要素を取得
+    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    const btn = targetEl ? targetEl.closest('.dpad-btn') : null;
+
+    if (btn !== currentActiveBtn) {
+      // 以前のボタンのアクティブを解除
+      if (currentActiveBtn) {
+        currentActiveBtn.classList.remove('active');
+        clearInterval(slideInterval);
+        slideInterval = null;
+      }
+
+      currentActiveBtn = btn;
+
+      // 新しいボタンに入った場合
+      if (btn) {
+        btn.classList.add('active');
+        const actionType = btn.dataset.action;
+        
+        // 即座に1回実行
+        if (actions[actionType]) actions[actionType]();
+
+        // 押しっぱなし・スライド保持時の連続移動処理
+        slideInterval = setInterval(() => {
+          if (actions[actionType]) actions[actionType]();
+        }, 120);
+      }
+    }
+  }
+
+  function stopPadTouch(e) {
+    e.preventDefault();
+    if (currentActiveBtn) {
+      currentActiveBtn.classList.remove('active');
+      currentActiveBtn = null;
+    }
+    if (slideInterval) {
+      clearInterval(slideInterval);
+      slideInterval = null;
+    }
+  }
+
+  dpadPad.addEventListener('touchstart', handlePadTouch, { passive: false });
+  dpadPad.addEventListener('touchmove', handlePadTouch, { passive: false });
+  dpadPad.addEventListener('touchend', stopPadTouch, { passive: false });
+  dpadPad.addEventListener('touchcancel', stopPadTouch, { passive: false });
+
+  /* --- 右側アクションボタン（回転・一発落下）の制御 --- */
+  const actionButtonMap = {
     'btn-rotate': actions.rotate,
-    'btn-down': actions.down,
     'btn-space': actions.hardDrop
   };
 
-  const keyToBtnId = {
-    'ArrowLeft': 'btn-left',
-    'ArrowRight': 'btn-right',
-    'ArrowUp': 'btn-up',
-    'ArrowDown': 'btn-down',
-    ' ': 'btn-space'
-  };
-
-  // タッチ・クリック制御（ダブルタップ拡大やスクロールの完全防止）
-  Object.keys(buttonMap).forEach(id => {
+  Object.keys(actionButtonMap).forEach(id => {
     const btn = document.getElementById(id);
     if (!btn) return;
 
     const trigger = (e) => {
-      e.preventDefault(); // デフォルト動作（スクロール・ズーム等）を即座に停止
+      e.preventDefault();
       if (isGameOver) return;
-      buttonMap[id]();
+      btn.classList.add('active');
+      actionButtonMap[id]();
+      setTimeout(() => btn.classList.remove('active'), 100);
     };
 
-    // touchstartで即座に反応させることで遅延（100〜300ms）を削減
     btn.addEventListener('touchstart', trigger, { passive: false });
     btn.addEventListener('mousedown', (e) => {
-      // タッチデバイスでの二重発火を防止
-      if (e.detail === 0) return; 
+      if (e.detail === 0) return;
       trigger(e);
     });
   });
 
-  // 画面全体のタッチによる拡大・スクロールをJSレベルでも無効化
-  document.addEventListener('touchstart', (e) => {
-    if (e.touches.length > 1) {
-      e.preventDefault(); // ピンチイン・ピンチアウトの禁止
-    }
-  }, { passive: false });
-
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', (e) => {
-    const now = (new Date()).getTime();
-    if (now - lastTouchEnd <= 300) {
-      e.preventDefault(); // ダブルタップによるズームの禁止
-    }
-    lastTouchEnd = now;
-  }, false);
+  /* キーボードの対応 */
+  const keyToBtnId = {
+    'ArrowLeft': 'btn-left',
+    'ArrowRight': 'btn-right',
+    'ArrowDown': 'btn-down',
+    'ArrowUp': 'btn-rotate',
+    ' ': 'btn-space'
+  };
 
   document.addEventListener('keydown', event => {
     if (isGameOver) return;
-
     const btnId = keyToBtnId[event.key];
     if (btnId) {
-      if (event.key === ' ' || event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-        event.preventDefault();
-      }
-
+      if ([' ', 'ArrowUp', 'ArrowDown'].includes(event.key)) event.preventDefault();
       const btn = document.getElementById(btnId);
       if (btn) btn.classList.add('active');
 
       if (event.key === 'ArrowLeft') actions.left();
       if (event.key === 'ArrowRight') actions.right();
-      if (event.key === 'ArrowUp') actions.rotate();
       if (event.key === 'ArrowDown') actions.down();
+      if (event.key === 'ArrowUp') actions.rotate();
       if (event.key === ' ') actions.hardDrop();
     }
   });
