@@ -143,7 +143,7 @@
     .btn-right { grid-column: 3; grid-row: 2; }
     .btn-down { grid-column: 2; grid-row: 3; }
 
-    /* アクションボタン（ハードドロップ用） */
+    /* 右側アクションボタン */
     .action-buttons {
       display: flex;
       flex-direction: column;
@@ -152,19 +152,31 @@
 
     .action-btn {
       width: 110px;
-      height: 48px;
-      background-color: #e11d48;
+      height: 44px;
       color: #fff;
       border: none;
-      border-radius: 24px;
+      border-radius: 22px;
       font-weight: bold;
       font-size: 13px;
       cursor: pointer;
-      box-shadow: 0 4px 0 #9f1239;
       touch-action: manipulation;
     }
 
-    .action-btn:active, .action-btn.active {
+    .btn-rotate-action {
+      background-color: #0284c7;
+      box-shadow: 0 4px 0 #0369a1;
+    }
+    .btn-rotate-action:active, .btn-rotate-action.active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #0369a1;
+      background-color: #38bdf8;
+    }
+
+    .btn-drop-action {
+      background-color: #e11d48;
+      box-shadow: 0 4px 0 #9f1239;
+    }
+    .btn-drop-action:active, .btn-drop-action.active {
       transform: translateY(2px);
       box-shadow: 0 2px 0 #9f1239;
       background-color: #be123c;
@@ -244,7 +256,8 @@
       <button class="dpad-btn btn-down" id="btn-down">▼</button>
     </div>
     <div class="action-buttons">
-      <button class="action-btn" id="btn-space">DROP</button>
+      <button class="action-btn btn-rotate-action" id="btn-rotate">回転</button>
+      <button class="action-btn btn-drop-action" id="btn-space">一発落下</button>
     </div>
   </div>
 </div>
@@ -270,13 +283,13 @@
 
   const SHAPES = [
     [],
-    [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
-    [[2,0,0],[2,2,2],[0,0,0]],
-    [[0,0,3],[3,3,3],[0,0,0]],
-    [[4,4],[4,4]],
-    [[0,5,5],[5,5,0],[0,0,0]],
-    [[0,6,0],[6,6,6],[0,0,0]],
-    [[7,7,0],[0,7,7],[0,0,0]]
+    [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], // I
+    [[2,0,0],[2,2,2],[0,0,0]],                // J
+    [[0,0,3],[3,3,3],[0,0,0]],                // L
+    [[4,4],[4,4]],                            // O
+    [[0,5,5],[5,5,0],[0,0,0]],                // S
+    [[0,6,0],[6,6,6],[0,0,0]],                // T
+    [[7,7,0],[0,7,7],[0,0,0]]                 // Z
   ];
 
   let board = createMatrix(COLS, ROWS);
@@ -328,7 +341,9 @@
     for (let i = 0; i < ROWS; i++) context.strokeRect(0, i, COLS, 1);
 
     drawMatrix(board, {x: 0, y: 0}, context);
-    drawMatrix(player.matrix, player.pos, context);
+    if (player.matrix) {
+      drawMatrix(player.matrix, player.pos, context);
+    }
 
     nextContext.fillStyle = '#020617';
     nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
@@ -351,6 +366,7 @@
     return false;
   }
 
+  // ブロックを固定する処理（修正ポイント）
   function merge(board, player) {
     player.matrix.forEach((row, y) => {
       row.forEach((value, x) => {
@@ -370,7 +386,7 @@
     matrix.forEach(row => row.reverse());
   }
 
-  // アクション処理（キーボード・画面上ボタン共通）
+  // 操作アクション
   const actions = {
     left: () => {
       player.pos.x--;
@@ -396,12 +412,13 @@
     },
     down: () => {
       player.pos.y++;
+      // 衝突したら1つ戻して固定（修正ポイント）
       if (collide(board, player)) {
         player.pos.y--;
         merge(board, player);
-        playerReset();
         clearLines();
         updateScore();
+        playerReset();
       }
       dropCounter = 0;
     },
@@ -411,16 +428,17 @@
       }
       player.pos.y--;
       merge(board, player);
-      playerReset();
       clearLines();
       updateScore();
+      playerReset();
       dropCounter = 0;
     }
   };
 
   function getRandomPiece() {
     const type = Math.floor(Math.random() * 7) + 1;
-    return SHAPES[type];
+    // ディープコピーして形状を返す
+    return SHAPES[type].map(row => [...row]);
   }
 
   function playerReset() {
@@ -430,18 +448,21 @@
     player.pos.y = 0;
     player.pos.x = Math.floor(COLS / 2) - Math.floor(player.matrix[0].length / 2);
 
+    // 出現した瞬間に被っていたらゲームオーバー
     if (collide(board, player)) {
       isGameOver = true;
       document.getElementById('game-over').style.display = 'flex';
     }
   }
 
+  // ライン消去判定
   function clearLines() {
     let linesCleared = 0;
     outer: for (let y = board.length - 1; y >= 0; --y) {
       for (let x = 0; x < board[y].length; ++x) {
         if (board[y][x] === 0) continue outer;
       }
+      // 埋まった行を削除して一番上に追加
       const row = board.splice(y, 1)[0].fill(0);
       board.unshift(row);
       ++y;
@@ -492,18 +513,17 @@
     update();
   }
 
-  // --- 連動機能（キーボード＆画面上ボタン） ---
+  // --- イベント登録 ---
 
-  // 画面上のボタンと入力アクションのマッピング
   const buttonMap = {
-    'btn-left': { action: actions.left, key: 'ArrowLeft' },
-    'btn-right': { action: actions.right, key: 'ArrowRight' },
-    'btn-up': { action: actions.rotate, key: 'ArrowUp' },
-    'btn-down': { action: actions.down, key: 'ArrowDown' },
-    'btn-space': { action: actions.hardDrop, key: ' ' }
+    'btn-left': actions.left,
+    'btn-right': actions.right,
+    'btn-up': actions.rotate,
+    'btn-rotate': actions.rotate,
+    'btn-down': actions.down,
+    'btn-space': actions.hardDrop
   };
 
-  // キーコードからボタンIDを逆引きするマップ
   const keyToBtnId = {
     'ArrowLeft': 'btn-left',
     'ArrowRight': 'btn-right',
@@ -512,36 +532,31 @@
     ' ': 'btn-space'
   };
 
-  // 画面上のボタン操作イベントを登録
   Object.keys(buttonMap).forEach(id => {
     const btn = document.getElementById(id);
+    if (!btn) return;
     const trigger = (e) => {
       e.preventDefault();
       if (isGameOver) return;
-      buttonMap[id].action();
+      buttonMap[id]();
     };
 
-    // クリック・タップ両対応
     btn.addEventListener('mousedown', trigger);
     btn.addEventListener('touchstart', trigger);
   });
 
-  // キーボード操作 ＋ 画面ボタンの視覚フィードバック連動
   document.addEventListener('keydown', event => {
     if (isGameOver) return;
 
     const btnId = keyToBtnId[event.key];
     if (btnId) {
-      // 画面をスクロールさせない処理
       if (event.key === ' ' || event.key === 'ArrowUp' || event.key === 'ArrowDown') {
         event.preventDefault();
       }
 
-      // 画面上のボタンを「押し込まれた見た目」にする
       const btn = document.getElementById(btnId);
       if (btn) btn.classList.add('active');
 
-      // アクション実行
       if (event.key === 'ArrowLeft') actions.left();
       if (event.key === 'ArrowRight') actions.right();
       if (event.key === 'ArrowUp') actions.rotate();
@@ -553,7 +568,6 @@
   document.addEventListener('keyup', event => {
     const btnId = keyToBtnId[event.key];
     if (btnId) {
-      // キーを離した時に押し込み効果を解除
       const btn = document.getElementById(btnId);
       if (btn) btn.classList.remove('active');
     }
