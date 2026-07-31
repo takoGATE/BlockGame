@@ -2,196 +2,245 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <!-- 画面拡大・ダブルタップズームを制限するビューポート設定 -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-  <title>Tetris Game</title>
+  <!-- 画面拡大・ダブルタップズームを徹底的に制限するビューポート設定 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
+  <title>Max Tetris Mobile</title>
   <style>
     :root {
-      --bg-color: #090d16;
-      --card-bg: rgba(15, 23, 42, 0.8);
-      --text-color: #f8fafc;
-      --border-color: rgba(255, 255, 255, 0.1);
+      --bg-color: #05070a;
+      --card-bg: rgba(10, 15, 28, 0.95);
+      --text-color: #f1f5f9;
+      --border-color: rgba(255, 255, 255, 0.08);
       --accent-color: #38bdf8;
+      /* 端末の安全領域（ノッチなど）を考慮 */
+      --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      /* 選択防止・ハイライト防止 */
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-      touch-action: manipulation; /* 連打・スライド時の画面ズーム・ブレ防止 */
+      -webkit-tap-highlight-color: transparent;
+      /* 基本的なパン・ズームを禁止 */
+      touch-action: none;
     }
 
     html, body {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      touch-action: none;
-      overscroll-behavior: none;
-      position: fixed; /* iOSなどの画面ズレを固定防止 */
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+      position: fixed; /* スクロールブレ防止 */
     }
 
     body {
-      background: radial-gradient(circle at center, #1e1b4b 0%, #090d16 100%);
-      color: var(--text-color);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 4px;
     }
 
-    .game-container {
+    /* ゲーム全体を囲むコンテナ。画面いっぱいに広げる */
+    .game-screen {
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 10px;
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      border-radius: 20px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.15);
-      border: 1px solid var(--border-color);
-      max-width: 100vw;
+      background: radial-gradient(circle at center, #111827 0%, #05070a 100%);
+      padding-bottom: var(--safe-area-inset-bottom); /* iPhone X以降などの下部余白 */
     }
 
-    .top-section {
+    /* --- 上部：ゲーム画面とサイドパネル --- */
+    .top-region {
+      flex: 1; /* 残りの高さをすべて使用 */
       display: flex;
+      justify-content: center;
+      align-items: center;
       gap: 10px;
-      align-items: flex-start;
+      padding: 10px;
+      min-height: 0; /* flex子要素の縮小許可 */
     }
 
-    .main-board {
+    .main-board-wrapper {
       position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
     }
 
     canvas {
-      border-radius: 10px;
-      background-color: #030712;
       display: block;
+      border-radius: 8px;
+      background-color: #000;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     }
 
     #tetris {
-      border: 2px solid rgba(56, 189, 248, 0.3);
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+      height: 100%; /* 高さいっぱいに */
+      width: auto;  /* アスペクト比維持 */
+      border: 2px solid rgba(56, 189, 248, 0.2);
     }
 
     .sidebar {
+      width: 90px;
+      height: 100%;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      width: 75px;
+      gap: 8px;
+      justify-content: flex-start; /* 上寄せ */
     }
 
     .panel {
-      background: rgba(3, 7, 18, 0.7);
+      background: rgba(0, 0, 0, 0.3);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 4px 2px;
+      border-radius: 12px;
+      padding: 6px 4px;
       text-align: center;
     }
 
     .panel h2 {
-      font-size: 8px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 1px;
-      color: #64748b;
-      margin-bottom: 2px;
+      color: #94a3b8;
+      margin-bottom: 3px;
+      text-transform: uppercase;
     }
 
     .panel .value {
-      font-size: 14px;
+      font-size: 18px;
       font-weight: 800;
       color: var(--accent-color);
-      text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
     }
 
     #next-canvas {
       margin: 2px auto 0;
+      width: 50px;
+      height: 50px;
     }
 
-    /* コントローラーエリア */
-    .controller-section {
+    /* システムボタンエリア（リセットなど） */
+    .system-controls {
+      margin-top: auto; /* サイドパネルの下部に配置 */
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .btn-sys {
+      width: 100%;
+      padding: 10px 0;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.1s;
+      color: #fff;
+    }
+
+    /* 常時表示のリセットボタン */
+    .btn-reset {
+      background: linear-gradient(135deg, #475569, #1e293b);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .btn-sys:active {
+      transform: translateY(1px);
+      filter: brightness(1.1);
+    }
+
+    /* --- 下部：操作コントローラー（大幅拡大） --- */
+    .controller-region {
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border-color);
+      border-radius: 24px 24px 0 0;
+      padding: 20px 15px; /* パディングを増やして大きく */
       display: flex;
       align-items: center;
       justify-content: space-between;
-      width: 100%;
-      padding-top: 6px;
-      border-top: 1px solid var(--border-color);
-      gap: 4px;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+      /* タッチ操作の反応を速くする */
+      touch-action: none;
     }
 
-    /* 拡大版：逆T字型の繋がった十字キー（1マスのサイズを 44px -> 52px に拡大） */
-    .dpad-pad {
+    /* 左側：十字キー（スライド対応、逆T字） */
+    .dpad-container {
       display: grid;
-      grid-template-columns: repeat(3, 52px);
-      grid-template-rows: repeat(2, 52px);
-      gap: 2px;
-      background: #0b1329;
-      border-radius: 16px;
-      padding: 5px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.5);
+      /* ボタンサイズを大幅アップ 65px */
+      grid-template-columns: repeat(3, 65px);
+      grid-template-rows: repeat(2, 65px);
+      gap: 3px;
+      background: #000;
+      border-radius: 20px;
+      padding: 6px;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
       touch-action: none;
     }
 
     .dpad-btn {
       background: #1e293b;
-      color: #cbd5e1;
+      color: #f1f5f9;
       border: none;
-      font-size: 22px;
+      font-size: 28px;
       display: flex;
       justify-content: center;
       align-items: center;
-      transition: background 0.05s, color 0.05s, transform 0.05s;
-      pointer-events: auto;
+      transition: background 0.05s;
+      pointer-events: auto; /* これ重要 */
       touch-action: none;
     }
 
-    /* 逆T字構造の配置 */
-    .btn-left { 
-      grid-column: 1; grid-row: 1; 
-      border-radius: 12px 0 0 12px;
-      box-shadow: -2px 3px 0 #0f172a;
+    /* 逆T字配置 */
+    .btn-left {
+      grid-column: 1; grid-row: 1;
+      border-radius: 15px 5px 5px 15px;
+      box-shadow: -3px 4px 0 #0f172a;
     }
-    .btn-right { 
-      grid-column: 3; grid-row: 1; 
-      border-radius: 0 12px 12px 0;
-      box-shadow: 2px 3px 0 #0f172a;
+    .btn-right {
+      grid-column: 3; grid-row: 1;
+      border-radius: 5px 15px 15px 5px;
+      box-shadow: 3px 4px 0 #0f172a;
     }
-    .btn-down { 
-      grid-column: 2; grid-row: 2; 
-      border-radius: 0 0 12px 12px;
-      box-shadow: 0 4px 0 #0f172a;
+    .btn-down {
+      grid-column: 2; grid-row: 2;
+      border-radius: 5px 5px 15px 15px;
+      box-shadow: 0 5px 0 #0f172a;
     }
 
-    /* タップ/スライド時のアクティブ状態 */
+    /* D-Pad アクティブ状態 */
     .dpad-btn.active {
       background: #0284c7 !important;
-      color: #ffffff !important;
-      box-shadow: inset 0 0 8px rgba(0,0,0,0.5) !important;
-      filter: brightness(1.2);
+      color: #fff !important;
+      transform: translateY(2px);
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5) !important;
     }
 
-    /* 右側：対角配置のボタンエリア */
-    .action-buttons {
+    /* 右側：アーケードボタン（対角配置、サイズアップ） */
+    .action-container {
       display: grid;
-      grid-template-columns: repeat(2, 54px);
-      grid-template-rows: repeat(2, 54px);
-      gap: 4px;
-      width: 112px;
-      height: 112px;
+      grid-template-columns: repeat(2, 70px);
+      grid-template-rows: repeat(2, 70px);
+      gap: 8px;
+      width: 150px;
+      height: 150px;
       align-items: center;
       justify-content: center;
       touch-action: none;
     }
 
     .arcade-btn {
-      width: 52px;
-      height: 52px;
+      width: 68px;
+      height: 68px;
       border-radius: 50%;
       border: none;
       cursor: pointer;
@@ -199,98 +248,112 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-weight: 900;
       color: #fff;
       touch-action: none;
-      transition: transform 0.05s, box-shadow 0.05s;
+      transition: all 0.05s;
     }
 
-    /* 右上に「一発落下」 */
+    /* 【変更】左上に「一発落下（⚡）」 */
     .btn-drop-action {
-      grid-column: 2;
+      grid-column: 1;
       grid-row: 1;
       background: radial-gradient(circle at 35% 35%, #f43f5e, #be123c);
-      box-shadow: 0 4px 0 #881337, 0 5px 10px rgba(225, 29, 72, 0.4);
+      box-shadow: 0 5px 0 #881337, 0 8px 15px rgba(225, 29, 72, 0.4);
     }
 
-    /* 左下に「回転」 */
+    /* 【変更】右下に「回転（↻）」 */
     .btn-rotate-action {
-      grid-column: 1;
+      grid-column: 2;
       grid-row: 2;
       background: radial-gradient(circle at 35% 35%, #38bdf8, #0284c7);
-      box-shadow: 0 4px 0 #0369a1, 0 5px 10px rgba(2, 132, 199, 0.4);
+      box-shadow: 0 5px 0 #0369a1, 0 8px 15px rgba(2, 132, 199, 0.4);
     }
 
     .arcade-btn:active, .arcade-btn.active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #000, 0 2px 4px rgba(0,0,0,0.5) !important;
-      filter: brightness(1.2);
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #000, 0 3px 6px rgba(0,0,0,0.6) !important;
+      filter: brightness(1.1);
     }
 
     .arcade-btn .icon {
-      font-size: 15px;
+      font-size: 22px;
       line-height: 1;
+      margin-bottom: 2px;
     }
 
     .arcade-btn .text {
-      font-size: 8px;
-      margin-top: 1px;
+      font-size: 10px;
+      font-weight: 800;
       letter-spacing: 0.5px;
       opacity: 0.9;
     }
 
+    /* ゲームオーバー時のオーバレイ */
     .overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(3, 7, 18, 0.92);
-      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(5px);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      border-radius: 10px;
+      border-radius: 8px;
+      z-index: 10;
     }
 
     .overlay h1 {
-      font-size: 20px;
+      font-size: 28px;
       font-weight: 900;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       color: #f43f5e;
-      text-shadow: 0 0 10px rgba(244, 63, 94, 0.6);
+      text-shadow: 0 0 15px rgba(244, 63, 94, 0.7);
     }
 
-    .btn-restart {
-      background: var(--accent-color);
-      color: #0f172a;
-      border: none;
-      padding: 8px 16px;
-      font-weight: 800;
-      font-size: 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    /* レスポンシブ調整：画面が横長の時など */
+    @media (orientation: landscape) and (max-height: 500px) {
+      .top-region { flex-direction: row; padding: 5px; }
+      #tetris { height: 95vh; }
+      .sidebar { width: 70px; gap: 4px; }
+      .panel { padding: 2px; }
+      .panel h2 { font-size: 8px; }
+      .panel .value { font-size: 14px; }
+      #next-canvas { width: 35px; height: 35px; }
+      .controller-region { padding: 5px 15px; border-radius: 10px 10px 0 0;}
+      .dpad-container { grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(2, 40px); }
+      .dpad-btn { font-size: 18px; }
+      .action-container { width: 90px; height: 90px; grid-template-columns: repeat(2, 42px); grid-template-rows: repeat(2, 42px); gap: 4px;}
+      .arcade-btn { width: 40px; height: 40px; }
+      .arcade-btn .icon { font-size: 14px; }
+      .arcade-btn .text { display: none; }
     }
   </style>
 </head>
 <body>
 
-<div class="game-container">
-  <div class="top-section">
-    <div class="main-board">
-      <canvas id="tetris" width="190" height="380"></canvas>
+<div class="game-screen">
+  <!-- 上部：ゲームエリア -->
+  <div class="top-region">
+    <div class="main-board-wrapper">
+      <!-- 内部解像度は固定、CSSで拡大 -->
+      <canvas id="tetris" width="200" height="400"></canvas>
+      
+      <!-- ゲームオーバー画面 -->
       <div id="game-over" class="overlay" style="display: none;">
         <h1>GAME OVER</h1>
-        <button class="btn-restart" onclick="resetGame()">RESTART</button>
+        <!-- オーバーレイ内の再開ボタン -->
+        <button class="btn-sys btn-reset" style="width: 120px;" onclick="resetGame()">RESTART</button>
       </div>
     </div>
 
+    <!-- サイドバー -->
     <div class="sidebar">
       <div class="panel">
         <h2>NEXT</h2>
-        <canvas id="next-canvas" width="45" height="45"></canvas>
+        <canvas id="next-canvas" width="50" height="50"></canvas>
       </div>
       <div class="panel">
         <h2>SCORE</h2>
@@ -304,24 +367,31 @@
         <h2>LEVEL</h2>
         <div id="level" class="value">1</div>
       </div>
+
+      <!-- システムボタンエリア（常時表示のリセット） -->
+      <div class="system-controls">
+        <button class="btn-sys btn-reset" onclick="resetGame()">RESET</button>
+      </div>
     </div>
   </div>
 
-  <!-- 操作コントローラー -->
-  <div class="controller-section">
-    <!-- 拡大された逆T字型 十字キー（スライド対応） -->
-    <div class="dpad-pad" id="dpad-pad">
+  <!-- 下部：大きな操作コントローラー -->
+  <div class="controller-region">
+    <!-- 左側：スライド対応 十字キー -->
+    <div class="dpad-container" id="dpad-pad">
       <button class="dpad-btn btn-left" data-action="left" id="btn-left">◄</button>
       <button class="dpad-btn btn-right" data-action="right" id="btn-right">►</button>
       <button class="dpad-btn btn-down" data-action="down" id="btn-down">▼</button>
     </div>
 
-    <!-- 右側：アーケードボタン（右上＝一発、左下＝回転） -->
-    <div class="action-buttons">
+    <!-- 右側：アクションボタン（配置入れ替え済み） -->
+    <div class="action-container">
+      <!-- 左上：一発落下 -->
       <button class="arcade-btn btn-drop-action" id="btn-space">
         <span class="icon">⚡</span>
         <span class="text">一発</span>
       </button>
+      <!-- 右下：回転 -->
       <button class="arcade-btn btn-rotate-action" id="btn-rotate">
         <span class="icon">↻</span>
         <span class="text">回転</span>
@@ -331,51 +401,74 @@
 </div>
 
 <script>
-  /* --- スマホのスクロール・ズーム（ダブルタップ等）を徹底防止 --- */
+  /* --- 徹底したズーム防止対策 --- */
+  
+  // 1. マルチタッチ（ピンチズーム）禁止
   document.addEventListener('touchstart', (e) => {
     if (e.touches.length > 1) {
-      e.preventDefault(); // 多重指タッチズームを強制禁止
+      e.preventDefault();
     }
   }, { passive: false });
 
+  // 2. ダブルタップズーム禁止（JavaScript側での補強）
   let lastTouchEnd = 0;
   document.addEventListener('touchend', (e) => {
     const now = (new Date()).getTime();
     if (now - lastTouchEnd <= 300) {
-      e.preventDefault(); // ダブルタップによる画面ズームを禁止
+      e.preventDefault(); // ダブルタップ時のデフォルト動作（ズーム）をカット
     }
     lastTouchEnd = now;
   }, false);
+  
+  // 3. コンテキストメニュー（長押し）禁止
+  window.oncontextmenu = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+  };
 
+  /* --- ゲームロジック --- */
   const canvas = document.getElementById('tetris');
   const context = canvas.getContext('2d');
   const nextCanvas = document.getElementById('next-canvas');
   const nextContext = nextCanvas.getContext('2d');
 
+  // グリッド設定
   const COLS = 10;
   const ROWS = 20;
-  const BLOCK_SIZE = 19;
+  // 内部的なブロックサイズ（描画用）
+  const BLOCK_SIZE = 20; 
 
+  // 描画コンテキストのスケール設定
   context.scale(BLOCK_SIZE, BLOCK_SIZE);
-  nextContext.scale(11.25, 11.25);
+  // Next画面は少し小さめにスケール
+  nextContext.scale(12.5, 12.5);
 
+  // テトリミノの色
   const COLORS = [
     null,
-    '#06b6d4', '#3b82f6', '#f97316',
-    '#eab308', '#22c55e', '#a855f7', '#ef4444'
+    '#22d3ee', // I (Cyan)
+    '#2563eb', // J (Blue)
+    '#f97316', // L (Orange)
+    '#eab308', // O (Yellow)
+    '#16a34a', // S (Green)
+    '#9333ea', // T (Purple)
+    '#dc2626'  // Z (Red)
   ];
 
+  // テトリミノの形状
   const SHAPES = [
     [],
-    [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
-    [[2,0,0],[2,2,2],[0,0,0]],
-    [[0,0,3],[3,3,3],[0,0,0]],
-    [[4,4],[4,4]],
-    [[0,5,5],[5,5,0],[0,0,0]],
-    [[0,6,0],[6,6,6],[0,0,0]],
-    [[7,7,0],[0,7,7],[0,0,0]]
+    [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], // I
+    [[2,0,0],[2,2,2],[0,0,0]],                 // J
+    [[0,0,3],[3,3,3],[0,0,0]],                 // L
+    [[4,4],[4,4]],                             // O
+    [[0,5,5],[5,5,0],[0,0,0]],                 // S
+    [[0,6,0],[6,6,6],[0,0,0]],                 // T
+    [[7,7,0],[0,7,7],[0,0,0]]                  // Z
   ];
 
+  // ゲーム状態変数
   let board = createMatrix(COLS, ROWS);
   let player = {
     pos: {x: 0, y: 0},
@@ -390,54 +483,71 @@
   let dropInterval = 1000;
   let lastTime = 0;
   let isGameOver = false;
+  let isPaused = false;
 
+  // 行列の生成
   function createMatrix(w, h) {
     const matrix = [];
     while (h--) matrix.push(new Array(w).fill(0));
     return matrix;
   }
 
+  // ミノの描画（リッチな見た目に）
   function drawMatrix(matrix, offset, ctx) {
     matrix.forEach((row, y) => {
       row.forEach((value, x) => {
         if (value !== 0) {
-          ctx.fillStyle = COLORS[value];
-          ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
+          const drawX = x + offset.x;
+          const drawY = y + offset.y;
           
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-          ctx.fillRect(x + offset.x, y + offset.y, 1, 0.08);
-          ctx.fillRect(x + offset.x, y + offset.y, 0.08, 1);
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-          ctx.fillRect(x + offset.x, y + offset.y + 0.92, 1, 0.08);
-          ctx.fillRect(x + offset.x + 0.92, y + offset.y, 0.08, 1);
+          // メインの色
+          ctx.fillStyle = COLORS[value];
+          ctx.fillRect(drawX, drawY, 1, 1);
+          
+          // ハイライト（上と左）
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.fillRect(drawX, drawY, 1, 0.1);
+          ctx.fillRect(drawX, drawY, 0.1, 1);
+          
+          // シャドウ（下と右）
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.fillRect(drawX, drawY + 0.9, 1, 0.1);
+          ctx.fillRect(drawX + 0.9, drawY, 0.1, 1);
         }
       });
     });
   }
 
+  // メイン描画関数
   function draw() {
-    context.fillStyle = '#030712';
+    // 背景クリア
+    context.fillStyle = '#000';
     context.fillRect(0, 0, canvas.width, canvas.height);
 
-    context.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    // うっすらグリッド線
+    context.strokeStyle = 'rgba(255, 255, 255, 0.04)';
     context.lineWidth = 0.05;
     for (let i = 0; i < COLS; i++) context.strokeRect(i, 0, 1, ROWS);
     for (let i = 0; i < ROWS; i++) context.strokeRect(0, i, COLS, 1);
 
+    // 盤面と落下中のミノを描画
     drawMatrix(board, {x: 0, y: 0}, context);
     if (player.matrix) {
       drawMatrix(player.matrix, player.pos, context);
     }
 
-    nextContext.fillStyle = '#030712';
+    // Nextミノの描画
+    nextContext.fillStyle = '#000';
     nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
     if (nextPiece) {
+      // 中央寄せ計算
       const offsetX = (4 - nextPiece[0].length) / 2;
       const offsetY = (4 - nextPiece.length) / 2;
       drawMatrix(nextPiece, {x: offsetX, y: offsetY}, nextContext);
     }
   }
 
+  // 衝突判定
   function collide(board, player) {
     const [m, o] = [player.matrix, player.pos];
     for (let y = 0; y < m.length; ++y) {
@@ -450,6 +560,7 @@
     return false;
   }
 
+  // 盤面に固定
   function merge(board, player) {
     player.matrix.forEach((row, y) => {
       row.forEach((value, x) => {
@@ -460,6 +571,7 @@
     });
   }
 
+  // 行列の回転
   function rotate(matrix) {
     for (let y = 0; y < matrix.length; ++y) {
       for (let x = 0; x < y; ++x) {
@@ -469,6 +581,7 @@
     matrix.forEach(row => row.reverse());
   }
 
+  // プレイヤー操作アクション
   const actions = {
     left: () => {
       player.pos.x--;
@@ -482,10 +595,14 @@
       const pos = player.pos.x;
       let offset = 1;
       rotate(player.matrix);
+      // 壁蹴り処理
       while (collide(board, player)) {
         player.pos.x += offset;
         offset = -(offset + (offset > 0 ? 1 : -1));
         if (offset > player.matrix[0].length) {
+          // 回転失敗、元に戻す
+          rotate(player.matrix);
+          rotate(player.matrix);
           rotate(player.matrix);
           player.pos.x = pos;
           return;
@@ -504,6 +621,7 @@
       dropCounter = 0;
     },
     hardDrop: () => {
+      if (isGameOver) return;
       while (!collide(board, player)) {
         player.pos.y++;
       }
@@ -516,57 +634,71 @@
     }
   };
 
+  // ランダムなミノを取得
   function getRandomPiece() {
     const type = Math.floor(Math.random() * 7) + 1;
-    return SHAPES[type].map(row => [...row]);
+    return SHAPES[type].map(row => [...row]); // コピーを返す
   }
 
+  // プレイヤー状態リセット（新しいミノ生成）
   function playerReset() {
     if (!nextPiece) nextPiece = getRandomPiece();
     player.matrix = nextPiece;
     nextPiece = getRandomPiece();
+    
+    // 初期位置（上端中央）
     player.pos.y = 0;
     player.pos.x = Math.floor(COLS / 2) - Math.floor(player.matrix[0].length / 2);
 
+    // 生成直後に衝突＝ゲームオーバー
     if (collide(board, player)) {
       isGameOver = true;
       document.getElementById('game-over').style.display = 'flex';
     }
   }
 
+  // ライン消去処理
   function clearLines() {
     let linesCleared = 0;
     outer: for (let y = board.length - 1; y >= 0; --y) {
       for (let x = 0; x < board[y].length; ++x) {
-        if (board[y][x] === 0) continue outer;
+        if (board[y][x] === 0) continue outer; // 空きがあれば消さない
       }
+      // 行を消して上につけたす
       const row = board.splice(y, 1)[0].fill(0);
       board.unshift(row);
-      ++y;
+      ++y; // 同じ行を再チェック
       linesCleared++;
     }
 
+    // スコア計算
     if (linesCleared > 0) {
-      const lineScores = [0, 100, 300, 500, 800];
+      const lineScores = [0, 100, 300, 500, 800]; // 1, 2, 3, 4ライン
       player.score += lineScores[linesCleared] * player.level;
       player.lines += linesCleared;
+      
+      // レベルアップ（10ラインごと）
       player.level = Math.floor(player.lines / 10) + 1;
+      // 速度アップ
       dropInterval = Math.max(100, 1000 - (player.level - 1) * 100);
     }
   }
 
+  // スコア表示更新
   function updateScore() {
     document.getElementById('score').innerText = player.score;
     document.getElementById('lines').innerText = player.lines;
     document.getElementById('level').innerText = player.level;
   }
 
+  // ゲームループ
   function update(time = 0) {
-    if (isGameOver) return;
+    if (isGameOver || isPaused) return;
 
     const deltaTime = time - lastTime;
     lastTime = time;
 
+    // 自動落下
     dropCounter += deltaTime;
     if (dropCounter > dropInterval) {
       actions.down();
@@ -576,6 +708,7 @@
     requestAnimationFrame(update);
   }
 
+  // ゲームリセット（常時呼び出し可能）
   function resetGame() {
     board = createMatrix(COLS, ROWS);
     player.score = 0;
@@ -587,28 +720,36 @@
     updateScore();
     nextPiece = null;
     playerReset();
-    update();
+    update(); // ループ再開
   }
 
-  /* --- 十字キー操作（滑らかなスライド反応） --- */
+  /* --- タッチ操作ロジック（スライド対応 十字キー） --- */
   const dpadPad = document.getElementById('dpad-pad');
   let currentActiveBtn = null;
-  let slideInterval = null;
+  let slideInterval = null; // 押しっぱなし用
 
+  // タッチ位置からボタンを特定する関数
   function updateTouchPosition(e) {
-    e.preventDefault();
+    // ズームやスクロールを防止
+    if(e.cancelable) e.preventDefault();
+    
     if (isGameOver) return;
 
-    const touch = e.touches[0] || e.changedTouches[0];
+    const touch = e.touches[0];
     if (!touch) return;
 
+    // 指の下にある要素を取得
     const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    // その要素または親要素が.dpad-btnかチェック
     const btn = targetEl ? targetEl.closest('.dpad-btn') : null;
 
+    // アクティブなボタンが変わった場合
     if (btn !== currentActiveBtn) {
+      // 前のボタンのアクティブ状態を解除
       if (currentActiveBtn) {
         currentActiveBtn.classList.remove('active');
       }
+      // 前のリピートタイマーをクリア
       if (slideInterval) {
         clearInterval(slideInterval);
         slideInterval = null;
@@ -620,17 +761,21 @@
         btn.classList.add('active');
         const actionType = btn.dataset.action;
 
+        // 初回実行
         if (actions[actionType]) actions[actionType]();
 
+        // 押しっぱなし（リピート）設定
+        const repeatDelay = actionType === 'down' ? 60 : 120; // 下は速く
         slideInterval = setInterval(() => {
           if (actions[actionType]) actions[actionType]();
-        }, 110);
+        }, repeatDelay);
       }
     }
   }
 
+  // タッチ終了時の処理
   function releaseTouch(e) {
-    if (e) e.preventDefault();
+    if (e && e.cancelable) e.preventDefault();
     if (currentActiveBtn) {
       currentActiveBtn.classList.remove('active');
       currentActiveBtn = null;
@@ -641,96 +786,48 @@
     }
   }
 
+  // D-Pad イベントリスナー登録
   dpadPad.addEventListener('touchstart', updateTouchPosition, { passive: false });
   dpadPad.addEventListener('touchmove', updateTouchPosition, { passive: false });
   dpadPad.addEventListener('touchend', releaseTouch, { passive: false });
   dpadPad.addEventListener('touchcancel', releaseTouch, { passive: false });
 
-  /* PCマウス用 */
-  ['btn-left', 'btn-right', 'btn-down'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (!btn) return;
-    const actionType = btn.dataset.action;
 
-    btn.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      if (isGameOver) return;
-      btn.classList.add('active');
-      if (actions[actionType]) actions[actionType]();
-
-      const timer = setInterval(() => {
-        if (actions[actionType]) actions[actionType]();
-      }, 110);
-
-      const stopMouse = () => {
-        btn.classList.remove('active');
-        clearInterval(timer);
-        window.removeEventListener('mouseup', stopMouse);
-      };
-      window.addEventListener('mouseup', stopMouse);
-    });
-  });
-
-  /* 右側アクションボタン */
+  /* --- 右側アクションボタンロジック（単発タップ） --- */
+  
   const actionButtonMap = {
-    'btn-rotate': actions.rotate,
-    'btn-space': actions.hardDrop
+    'btn-rotate': actions.rotate,   // 回転
+    'btn-space': actions.hardDrop   // 一発落下
   };
 
   Object.keys(actionButtonMap).forEach(id => {
     const btn = document.getElementById(id);
     if (!btn) return;
 
-    const trigger = (e) => {
-      e.preventDefault();
+    const triggerAction = (e) => {
+      if (e.cancelable) e.preventDefault();
       if (isGameOver) return;
+      
       btn.classList.add('active');
-      actionButtonMap[id]();
-      setTimeout(() => btn.classList.remove('active'), 100);
+      actionButtonMap[id](); // アクション実行
+      
+      // 少し後にグラフィックを戻す
+      setTimeout(() => btn.classList.remove('active'), 80);
     };
 
-    btn.addEventListener('touchstart', trigger, { passive: false });
+    // タッチイベント（マウスより優先）
+    btn.addEventListener('touchstart', triggerAction, { passive: false });
+    // マウスイベント（PC用）
     btn.addEventListener('mousedown', (e) => {
-      if (e.detail === 0) return;
-      trigger(e);
+      // すでにタッチで処理されていれば無視
+      if (e.detail === 0) return; 
+      triggerAction(e);
     });
   });
 
-  /* キーボードの対応 */
-  const keyToBtnId = {
-    'ArrowLeft': 'btn-left',
-    'ArrowRight': 'btn-right',
-    'ArrowDown': 'btn-down',
-    'ArrowUp': 'btn-rotate',
-    ' ': 'btn-space'
-  };
+  // 初期化
+  resetGame();
 
-  document.addEventListener('keydown', event => {
-    if (isGameOver) return;
-    const btnId = keyToBtnId[event.key];
-    if (btnId) {
-      if ([' ', 'ArrowUp', 'ArrowDown'].includes(event.key)) event.preventDefault();
-      const btn = document.getElementById(btnId);
-      if (btn) btn.classList.add('active');
-
-      if (event.key === 'ArrowLeft') actions.left();
-      if (event.key === 'ArrowRight') actions.right();
-      if (event.key === 'ArrowDown') actions.down();
-      if (event.key === 'ArrowUp') actions.rotate();
-      if (event.key === ' ') actions.hardDrop();
-    }
-  });
-
-  document.addEventListener('keyup', event => {
-    const btnId = keyToBtnId[event.key];
-    if (btnId) {
-      const btn = document.getElementById(btnId);
-      if (btn) btn.classList.remove('active');
-    }
-  });
-
-  playerReset();
-  update();
 </script>
 
 </body>
