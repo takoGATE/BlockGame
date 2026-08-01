@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Tetris Mobile Big Buttons</title>
+  <title>Tetris Mobile 3D D-Pad Single File</title>
   <style>
     :root {
       --bg-color: #030712;
@@ -86,7 +86,6 @@
       display: block;
     }
 
-    /* サイドバー */
     .sidebar {
       display: flex;
       flex-direction: column;
@@ -139,10 +138,10 @@
       font-size: 11px;
     }
 
-    /* --- 下部：操作コントローラー（ボタンを大幅拡大） --- */
+    /* --- 下部：操作コントローラー --- */
     .controller-stage {
       width: 100%;
-      height: 160px; /* サイズアップに対応するため若干拡大 */
+      height: 160px;
       flex-shrink: 0;
       background: var(--card-bg);
       border-top: 1px solid var(--border-color);
@@ -153,42 +152,80 @@
       box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
     }
 
-    /* 十字キー（大きめ） */
+    /* ★ 十字キー（立体・物理ボタン風） ★ */
     .dpad-grid {
       display: grid;
-      grid-template-columns: repeat(3, 56px); /* 44px -> 56px に拡大 */
-      grid-template-rows: repeat(2, 56px);   /* 44px -> 56px に拡大 */
-      gap: 3px;
-      background: #020617;
-      border-radius: 16px;
-      padding: 4px;
-      border: 1px solid var(--border-color);
+      grid-template-columns: repeat(3, 56px);
+      grid-template-rows: repeat(2, 56px);
+      gap: 0;
+      padding: 8px;
+      background: #111827;
+      border-radius: 20px;
+      border: 2px solid #000;
+      box-shadow: 
+        inset 0 2px 3px rgba(255,255,255,0.1),
+        0 4px 6px rgba(0,0,0,0.5);
     }
 
     .dpad-btn {
-      background: #1e293b;
-      color: #f8fafc;
+      background: #27354b;
+      color: #94a3b8;
       border: none;
-      font-size: 24px; /* 矢印アイコンも拡大 */
+      font-size: 26px;
       display: flex;
       justify-content: center;
       align-items: center;
       touch-action: none;
+      position: relative;
+      background-image: linear-gradient(135deg, #2d3d5a 0%, #1e293b 100%);
+      box-shadow: 
+        inset 0 1px 1px rgba(255,255,255,0.15),
+        0 4px 0 #111827,
+        0 4px 3px rgba(0,0,0,0.6);
+      transition: all 0.05s ease;
+      transform: translateY(0);
     }
 
-    .btn-left { grid-column: 1; grid-row: 1; border-radius: 10px 2px 2px 10px; }
-    .btn-right { grid-column: 3; grid-row: 1; border-radius: 2px 10px 10px 2px; }
-    .btn-down { grid-column: 2; grid-row: 2; border-radius: 2px 2px 10px 10px; }
+    .dpad-btn span {
+      display: block;
+      text-shadow: 0 -1px 0 rgba(0,0,0,0.8);
+    }
 
+    .btn-left { 
+      grid-column: 1; grid-row: 1; 
+      border-radius: 12px 4px 4px 12px; 
+      border-right: 1px solid rgba(0,0,0,0.3);
+    }
+    .btn-right { 
+      grid-column: 3; grid-row: 1; 
+      border-radius: 4px 12px 12px 4px; 
+      border-left: 1px solid rgba(0,0,0,0.3);
+    }
+    .btn-down { 
+      grid-column: 2; grid-row: 2; 
+      border-radius: 4px 4px 12px 12px; 
+      height: 60px;
+      margin-top: -2px;
+      border-top: 1px solid rgba(0,0,0,0.3);
+    }
+
+    /* 押し込み演出 */
     .dpad-btn.active {
-      background: #0284c7 !important;
-      color: #fff !important;
+      background: #1e293b;
+      background-image: linear-gradient(135deg, #1e293b 0%, #2d3d5a 100%);
+      color: var(--accent-color);
+      transform: translateY(3px); 
+      box-shadow: 
+        inset 0 1px 1px rgba(0,0,0,0.5),
+        0 1px 0 #111827,
+        0 1px 2px rgba(0,0,0,0.8);
+      text-shadow: 0 0 5px var(--accent-color);
     }
 
-    /* 右側：アクションボタン（大きめ） */
+    /* アクションボタン */
     .action-grid {
       display: grid;
-      grid-template-columns: repeat(2, 58px); /* 48px -> 58px に拡大 */
+      grid-template-columns: repeat(2, 58px);
       grid-template-rows: repeat(2, 58px);
       gap: 6px;
       width: 122px;
@@ -255,7 +292,6 @@
 <body>
 
 <div class="app-viewport">
-  <!-- 上部：ゲーム表示エリア -->
   <div class="game-stage">
     <div class="board-container">
       <div class="canvas-wrapper">
@@ -291,16 +327,13 @@
     </div>
   </div>
 
-  <!-- 下部：操作コントローラー -->
   <div class="controller-stage">
-    <!-- 十字キー -->
     <div class="dpad-grid" id="dpad-pad">
-      <button class="dpad-btn btn-left" data-action="left">◄</button>
-      <button class="dpad-btn btn-right" data-action="right">►</button>
-      <button class="dpad-btn btn-down" data-action="down">▼</button>
+      <button class="dpad-btn btn-left" data-action="left"><span>◄</span></button>
+      <button class="dpad-btn btn-right" data-action="right"><span>►</span></button>
+      <button class="dpad-btn btn-down" data-action="down"><span>▼</span></button>
     </div>
 
-    <!-- アクションボタン -->
     <div class="action-grid">
       <button class="arcade-btn btn-drop-action" id="btn-space">
         <span class="icon">⚡</span>
@@ -337,7 +370,7 @@
 
   const COLS = 10;
   const ROWS = 20;
-  const BLOCK_SIZE = 30; // 300 / 10
+  const BLOCK_SIZE = 30;
 
   const COLORS = [
     null,
@@ -397,7 +430,6 @@
     context.fillStyle = '#020617';
     context.fillRect(0, 0, canvas.width, canvas.height);
 
-    /* マス目のグリッド線（クッキリ見えるよう濃く変更） */
     context.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     context.lineWidth = 1;
     for (let c = 0; c <= COLS; c++) {
@@ -575,7 +607,7 @@
     update();
   }
 
-  /* タッチ操作イベント処理 */
+  /* タッチ操作処理 */
   const dpadPad = document.getElementById('dpad-pad');
   let currentActiveBtn = null;
   let slideInterval = null;
