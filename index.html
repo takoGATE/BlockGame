@@ -152,7 +152,7 @@
       box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
     }
 
-    /* ★ 十字キー（立体・物理ボタン風） ★ */
+    /* 十字キー（立体・物理ボタン風） */
     .dpad-grid {
       display: grid;
       grid-template-columns: repeat(3, 56px);
@@ -295,7 +295,7 @@
   <div class="game-stage">
     <div class="board-container">
       <div class="canvas-wrapper">
-        <canvas id="tetris" width="300" height="600"></canvas>
+        <canvas id="tetris"></canvas>
         <div id="game-over" class="overlay" style="display: none;">
           <h1>GAME OVER</h1>
           <button class="btn-reset-sys" style="width: 90px;" onclick="resetGame()">RESTART</button>
@@ -306,7 +306,7 @@
         <div class="panels-group">
           <div class="panel">
             <h2>NEXT</h2>
-            <canvas id="next-canvas" width="120" height="120"></canvas>
+            <canvas id="next-canvas"></canvas>
           </div>
           <div class="panel">
             <h2>SCORE</h2>
@@ -370,7 +370,7 @@
 
   const COLS = 10;
   const ROWS = 20;
-  const BLOCK_SIZE = 30;
+  let blockSize = 30;
 
   const COLORS = [
     null,
@@ -397,6 +397,27 @@
   let dropInterval = 1000;
   let lastTime = 0;
   let isGameOver = false;
+  let animId = null;
+
+  /* キャンバスサイズの再計算とリセット処理 */
+  function resizeCanvas() {
+    const wrapper = canvas.parentElement;
+    const rect = wrapper.getBoundingClientRect();
+    
+    // アスペクト比に合わせてCanvas内部の高解像度化・サイズリセットを行う
+    canvas.width = rect.width * window.devicePixelRatio;
+    canvas.height = rect.height * window.devicePixelRatio;
+    
+    // ブロックサイズの動的算出
+    blockSize = canvas.width / COLS;
+
+    const nextRect = nextCanvas.parentElement.getBoundingClientRect();
+    const nextSize = Math.min(nextRect.width - 8, 50);
+    nextCanvas.width = nextSize * window.devicePixelRatio;
+    nextCanvas.height = nextSize * window.devicePixelRatio;
+
+    draw();
+  }
 
   function createMatrix(w, h) {
     const matrix = [];
@@ -404,7 +425,7 @@
     return matrix;
   }
 
-  function drawMatrix(matrix, offset, ctx, size = BLOCK_SIZE) {
+  function drawMatrix(matrix, offset, ctx, size = blockSize) {
     matrix.forEach((row, y) => {
       row.forEach((value, x) => {
         if (value !== 0) {
@@ -430,18 +451,18 @@
     context.fillStyle = '#020617';
     context.fillRect(0, 0, canvas.width, canvas.height);
 
-    context.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    context.strokeStyle = 'rgba(255, 255, 255, 0.15)';
     context.lineWidth = 1;
     for (let c = 0; c <= COLS; c++) {
       context.beginPath();
-      context.moveTo(c * BLOCK_SIZE, 0);
-      context.lineTo(c * BLOCK_SIZE, canvas.height);
+      context.moveTo(c * blockSize, 0);
+      context.lineTo(c * blockSize, canvas.height);
       context.stroke();
     }
     for (let r = 0; r <= ROWS; r++) {
       context.beginPath();
-      context.moveTo(0, r * BLOCK_SIZE);
-      context.lineTo(canvas.width, r * BLOCK_SIZE);
+      context.moveTo(0, r * blockSize);
+      context.lineTo(canvas.width, r * blockSize);
       context.stroke();
     }
 
@@ -453,7 +474,7 @@
     nextContext.fillStyle = '#020617';
     nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
     if (nextPiece) {
-      const size = 30;
+      const size = nextCanvas.width / 4;
       const offsetX = (4 - nextPiece[0].length) / 2;
       const offsetY = (4 - nextPiece.length) / 2;
       drawMatrix(nextPiece, {x: offsetX, y: offsetY}, nextContext, size);
@@ -590,22 +611,37 @@
     if (dropCounter > dropInterval) actions.down();
 
     draw();
-    requestAnimationFrame(update);
+    animId = requestAnimationFrame(update);
   }
 
+  /* RESETボタン実行処理（画面サイズ・キャンバスリセット含む） */
   function resetGame() {
+    if (animId) cancelAnimationFrame(animId);
+    
     board = createMatrix(COLS, ROWS);
     player.score = 0;
     player.lines = 0;
     player.level = 1;
     dropInterval = 1000;
+    dropCounter = 0;
+    lastTime = 0;
     isGameOver = false;
+    
     document.getElementById('game-over').style.display = 'none';
+    
+    // レイアウトの歪みをクリアするためにリサイズを発火
+    resizeCanvas();
     updateScore();
     nextPiece = null;
     playerReset();
     update();
   }
+
+  /* 画面のリサイズ・回転検出イベント */
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(resizeCanvas, 200);
+  });
 
   /* タッチ操作処理 */
   const dpadPad = document.getElementById('dpad-pad');
@@ -682,6 +718,7 @@
     });
   });
 
+  // 初回起動処理
   resetGame();
 </script>
 
