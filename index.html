@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
-  <title>Tetris Mobile Refined</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Tetris Mobile Safe Area</title>
   <style>
     :root {
       --bg-color: #030712;
@@ -11,7 +11,8 @@
       --text-color: #f8fafc;
       --border-color: rgba(255, 255, 255, 0.12);
       --accent-color: #38bdf8;
-      --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+      /* iPhone Safariのアドレスバー・ホームバー対策 */
+      --safe-bottom: env(safe-area-inset-bottom, 10px);
     }
 
     * {
@@ -27,56 +28,57 @@
 
     html, body {
       width: 100vw;
+      /* 100vhではなく100svhを使ってSafariアドレスバーを除いた高さを基準にする */
       height: 100vh;
+      height: 100svh;
       overflow: hidden;
       background-color: var(--bg-color);
       color: var(--text-color);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       position: fixed;
+      inset: 0;
     }
 
-    /* 画面全体を縦に並べる（上：ゲーム / 下：コントローラー） */
     .app-viewport {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: var(--safe-area-bottom);
+      /* 下部に安全領域の余白を必ず確保 */
+      padding-bottom: var(--safe-bottom);
     }
 
-    /* --- ゲーム表示エリア（画面上部を最大限・アスペクト比固定で使う） --- */
+    /* --- 上部：ゲーム表示領域 --- */
     .game-stage {
       flex: 1;
       width: 100%;
-      min-height: 0; /* フレックス破綻防止 */
+      min-height: 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 8px;
+      padding: 6px;
     }
 
-    /* ゲーム盤面＋サイドバーを一体化する枠 */
     .board-container {
       display: flex;
       flex-direction: row;
       align-items: stretch;
-      gap: 12px;
+      gap: 10px;
       height: 100%;
       max-height: 100%;
       background: rgba(15, 23, 42, 0.6);
-      padding: 10px;
+      padding: 8px;
       border-radius: 16px;
       border: 1px solid var(--border-color);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
-    /* メインキャンバス（高精細描画） */
+    /* ゲーム盤面枠 */
     .canvas-wrapper {
       position: relative;
       height: 100%;
-      aspect-ratio: 1 / 2; /* テトリス盤面の1:2比率を強制 */
+      aspect-ratio: 1 / 2;
     }
 
     #tetris {
@@ -93,21 +95,21 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      width: 80px;
+      width: 75px;
       height: 100%;
     }
 
     .panels-group {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
     }
 
     .panel {
       background: rgba(2, 6, 23, 0.8);
       border: 1px solid var(--border-color);
       border-radius: 8px;
-      padding: 6px 2px;
+      padding: 4px 2px;
       text-align: center;
     }
 
@@ -115,63 +117,56 @@
       font-size: 9px;
       font-weight: 700;
       color: #94a3b8;
-      letter-spacing: 0.5px;
-      margin-bottom: 2px;
     }
 
     .panel .value {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 800;
       color: var(--accent-color);
     }
 
     #next-canvas {
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
       margin: 2px auto 0;
       display: block;
     }
 
-    /* 常時表示のリセットボタン */
     .btn-reset-sys {
       width: 100%;
-      padding: 10px 0;
+      padding: 8px 0;
       background: #334155;
       color: #fff;
       border: 1px solid var(--border-color);
       border-radius: 8px;
       font-weight: 700;
       font-size: 11px;
-      cursor: pointer;
     }
 
-    .btn-reset-sys:active {
-      background: #475569;
-    }
-
-    /* --- 下部：コントローラーエリア --- */
+    /* --- 下部：操作コントローラー（絶対にかぶらないようコンパクトに配置） --- */
     .controller-stage {
       width: 100%;
-      height: 180px; /* 固定高で画面外へのはみ出しをカット */
+      /* 高さをコンパクトに固定し、必ず見切れないように保護 */
+      height: 140px;
       flex-shrink: 0;
       background: var(--card-bg);
       border-top: 1px solid var(--border-color);
       display: flex;
-      justify-content: space-between;
+      justify-content: space-around;
       align-items: center;
-      padding: 0 16px;
-      box-shadow: 0 -10px 25px rgba(0,0,0,0.5);
+      padding: 0 12px;
+      box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
     }
 
-    /* 左：十字キー */
+    /* 十字キー */
     .dpad-grid {
       display: grid;
-      grid-template-columns: repeat(3, 52px);
-      grid-template-rows: repeat(2, 52px);
-      gap: 3px;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(2, 44px);
+      gap: 2px;
       background: #020617;
-      border-radius: 16px;
-      padding: 4px;
+      border-radius: 12px;
+      padding: 3px;
       border: 1px solid var(--border-color);
     }
 
@@ -179,37 +174,37 @@
       background: #1e293b;
       color: #f8fafc;
       border: none;
-      font-size: 22px;
+      font-size: 18px;
       display: flex;
       justify-content: center;
       align-items: center;
       touch-action: none;
     }
 
-    .btn-left { grid-column: 1; grid-row: 1; border-radius: 12px 4px 4px 12px; }
-    .btn-right { grid-column: 3; grid-row: 1; border-radius: 4px 12px 12px 4px; }
-    .btn-down { grid-column: 2; grid-row: 2; border-radius: 4px 4px 12px 12px; }
+    .btn-left { grid-column: 1; grid-row: 1; border-radius: 8px 2px 2px 8px; }
+    .btn-right { grid-column: 3; grid-row: 1; border-radius: 2px 8px 8px 2px; }
+    .btn-down { grid-column: 2; grid-row: 2; border-radius: 2px 2px 8px 8px; }
 
     .dpad-btn.active {
       background: #0284c7 !important;
       color: #fff !important;
     }
 
-    /* 右：アクションボタン */
+    /* 右側：ボタン類 */
     .action-grid {
       display: grid;
-      grid-template-columns: repeat(2, 56px);
-      grid-template-rows: repeat(2, 56px);
+      grid-template-columns: repeat(2, 48px);
+      grid-template-rows: repeat(2, 48px);
       gap: 6px;
-      width: 118px;
-      height: 118px;
+      width: 102px;
+      height: 102px;
       align-items: center;
       justify-content: center;
     }
 
     .arcade-btn {
-      width: 56px;
-      height: 56px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       border: none;
       display: flex;
@@ -220,32 +215,28 @@
       touch-action: none;
     }
 
-    /* 左上：一発落下 */
     .btn-drop-action {
       grid-column: 1;
       grid-row: 1;
       background: linear-gradient(135deg, #f43f5e, #be123c);
-      box-shadow: 0 4px 0 #881337;
+      box-shadow: 0 3px 0 #881337;
     }
 
-    /* 右下：回転 */
     .btn-rotate-action {
       grid-column: 2;
       grid-row: 2;
       background: linear-gradient(135deg, #38bdf8, #0284c7);
-      box-shadow: 0 4px 0 #0369a1;
+      box-shadow: 0 3px 0 #0369a1;
     }
 
     .arcade-btn.active {
       transform: translateY(2px);
       box-shadow: 0 1px 0 #000 !important;
-      filter: brightness(1.2);
     }
 
-    .arcade-btn .icon { font-size: 18px; line-height: 1; }
-    .arcade-btn .text { font-size: 9px; font-weight: 800; margin-top: 1px; }
+    .arcade-btn .icon { font-size: 16px; line-height: 1; }
+    .arcade-btn .text { font-size: 8px; font-weight: 800; margin-top: 1px; }
 
-    /* オーバーレイ */
     .overlay {
       position: absolute;
       inset: 0;
@@ -259,25 +250,24 @@
     }
 
     .overlay h1 {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 900;
       color: #f43f5e;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
   </style>
 </head>
 <body>
 
 <div class="app-viewport">
-  <!-- ゲーム描画ステージ（一体化枠） -->
+  <!-- 上部：ゲーム表示エリア -->
   <div class="game-stage">
     <div class="board-container">
       <div class="canvas-wrapper">
-        <!-- 高解像度（300x600）内部ピクセル固定 -->
         <canvas id="tetris" width="300" height="600"></canvas>
         <div id="game-over" class="overlay" style="display: none;">
           <h1>GAME OVER</h1>
-          <button class="btn-reset-sys" style="width: 100px;" onclick="resetGame()">RESTART</button>
+          <button class="btn-reset-sys" style="width: 90px;" onclick="resetGame()">RESTART</button>
         </div>
       </div>
 
@@ -306,16 +296,16 @@
     </div>
   </div>
 
-  <!-- 下部操作パネル -->
+  <!-- 下部：操作コントローラー -->
   <div class="controller-stage">
-    <!-- 左：十字キー（スライド対応） -->
+    <!-- 十字キー -->
     <div class="dpad-grid" id="dpad-pad">
-      <button class="dpad-btn btn-left" data-action="left" id="btn-left">◄</button>
-      <button class="dpad-btn btn-right" data-action="right" id="btn-right">►</button>
-      <button class="dpad-btn btn-down" data-action="down" id="btn-down">▼</button>
+      <button class="dpad-btn btn-left" data-action="left">◄</button>
+      <button class="dpad-btn btn-right" data-action="right">►</button>
+      <button class="dpad-btn btn-down" data-action="down">▼</button>
     </div>
 
-    <!-- 右：アクションボタン（左上＝一発 / 右下＝回転） -->
+    <!-- アクションボタン -->
     <div class="action-grid">
       <button class="arcade-btn btn-drop-action" id="btn-space">
         <span class="icon">⚡</span>
@@ -330,7 +320,7 @@
 </div>
 
 <script>
-  /* ダブルタップ・ピンチズーム完全抑止 */
+  /* ズーム抑止 */
   document.addEventListener('touchstart', (e) => {
     if (e.touches.length > 1) e.preventDefault();
   }, { passive: false });
@@ -352,7 +342,7 @@
 
   const COLS = 10;
   const ROWS = 20;
-  const BLOCK_SIZE = 30; // 300px / 10cols = 30px （高精細化）
+  const BLOCK_SIZE = 30; // 300 / 10
 
   const COLORS = [
     null,
@@ -386,7 +376,6 @@
     return matrix;
   }
 
-  /* ブロック描画（ピクセル単位で正確に描写してボヤけを解消） */
   function drawMatrix(matrix, offset, ctx, size = BLOCK_SIZE) {
     matrix.forEach((row, y) => {
       row.forEach((value, x) => {
@@ -397,7 +386,6 @@
           ctx.fillStyle = COLORS[value];
           ctx.fillRect(px, py, size, size);
 
-          // 枠線・立体感ハイライト
           ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
           ctx.fillRect(px, py, size, 2);
           ctx.fillRect(px, py, 2, size);
@@ -414,7 +402,6 @@
     context.fillStyle = '#020617';
     context.fillRect(0, 0, canvas.width, canvas.height);
 
-    // グリッド線
     context.strokeStyle = 'rgba(255, 255, 255, 0.05)';
     context.lineWidth = 1;
     for (let c = 0; c <= COLS; c++) {
@@ -435,7 +422,6 @@
       drawMatrix(player.matrix, player.pos, context);
     }
 
-    // NEXT表示
     nextContext.fillStyle = '#020617';
     nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
     if (nextPiece) {
@@ -593,7 +579,7 @@
     update();
   }
 
-  /* タッチスライド操作 */
+  /* タッチ操作イベント処理 */
   const dpadPad = document.getElementById('dpad-pad');
   let currentActiveBtn = null;
   let slideInterval = null;
@@ -644,7 +630,6 @@
   dpadPad.addEventListener('touchend', releaseTouch, { passive: false });
   dpadPad.addEventListener('touchcancel', releaseTouch, { passive: false });
 
-  /* アクションボタン設定 */
   const actionButtonMap = {
     'btn-rotate': actions.rotate,
     'btn-space': actions.hardDrop
